@@ -343,8 +343,7 @@ class RoomSchemaArgProvider(
     }
 }
 
-// Fork: version is "<upstream versionName>.<forkBuild>" and the app id differs from
-// upstream so both can be installed side by side. See FORK.md.
+// Fork: version is "<upstream versionName>.<forkBuild>". See FORK.md.
 val forkBuild =
     rootProject
         .file("fork.properties")
@@ -361,9 +360,6 @@ androidComponents {
     onVariants { variant ->
         if (!variant.productFlavors.contains("store" to "fdroid")) {
             return@onVariants
-        }
-        if (variant.buildType == "release") {
-            variant.applicationId.set("com.nononsenseapps.feeder.fork")
         }
         variant.outputs.forEach { output ->
             output.versionName.set("$upstreamVersionName.$forkBuild")
