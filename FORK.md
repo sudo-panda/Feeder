@@ -45,6 +45,34 @@ A push to `master` whose version already has a release publishes nothing
    request before merging*, with no bypass list.
 6. Make sure two-factor authentication is on for your GitHub account.
 
+## Cloud environment for Claude (local builds)
+
+So Claude can build and test before pushing, the Claude Code cloud environment needs the
+Android SDK. Open the environment's settings (the environment menu in the session's title
+bar, then *Edit*):
+
+- *Network access*: add `dl.google.com` and `maven.google.com` to the allowed domains,
+  and keep *Allow package managers* ticked.
+- *Setup script*:
+
+  ```bash
+  #!/bin/bash
+  set -euo pipefail
+  export ANDROID_HOME=/opt/android-sdk
+  if [ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+    mkdir -p "$ANDROID_HOME/cmdline-tools"
+    curl -fsSL -o /tmp/cmdline-tools.zip \
+      https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
+    unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
+    mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+    rm /tmp/cmdline-tools.zip
+  fi
+  yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+  echo "export ANDROID_HOME=$ANDROID_HOME" >> ~/.bashrc
+  ```
+
+  Gradle downloads the exact platform and build tools it needs on the first build.
+
 ## Security model
 
 - Only someone with push access to this repo can change what gets built. Keep 2FA on.
