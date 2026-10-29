@@ -451,6 +451,12 @@ class RssLocalSync(
                     feedSql.imageUrl = feed.icon?.let { sloppyLinkToStrictURLNoThrows(it) }
                         ?: feedSql.imageUrl
 
+                    // Fork: many sites serve /favicon.ico without declaring any icon, so use it
+                    // as a last resort. The UI shows a generic icon if it fails to load.
+                    if (feedSql.imageUrl == null) {
+                        feedSql.imageUrl = faviconUrl(feed.home_page_url) ?: faviconUrl(feedSql.url.toString())
+                    }
+
                     repository.upsertFeed(feedSql)
 
                     // Finally, prune database of old items
@@ -599,3 +605,14 @@ internal val Response.retryAfterSeconds: Long?
             // Fallback to 1 hour if response is incorrect
             retryAfter.toLongOrNull() ?: 3600L
         }
+
+// Fork: builds the site's /favicon.ico URL for the icon fallback above
+internal fun faviconUrl(link: String?): URL? =
+    try {
+        link?.let {
+            val url = URL(it)
+            URL(url.protocol, url.host, url.port, "/favicon.ico")
+        }
+    } catch (_: Exception) {
+        null
+    }

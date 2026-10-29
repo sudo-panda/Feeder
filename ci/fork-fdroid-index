@@ -1,17 +1,20 @@
 #!/bin/bash -eu
-# Builds an F-Droid repository containing one signed APK, with an UNSIGNED index.
+# Builds an F-Droid repository from signed APKs of the app, with an UNSIGNED index.
 # Runs fdroidserver (third-party, pinned in ci/fdroidserver-requirements.txt) in a job
-# without secrets; ci/fork-sign-index signs the index afterwards. See FORK.md.
+# without secrets; ci/fork-sign-index signs the index afterwards. Versions newer than
+# <current version code> are listed in F-Droid's Beta channel ("Unstable updates").
+# See FORK.md.
 #
-# Usage: ci/fork-fdroid-index <signed.apk> <output dir> <repo url> <repo name> <cert hex>
+# Usage: ci/fork-fdroid-index <apk dir> <output dir> <repo url> <repo name> <cert hex> <current version code>
 # Env:   ANDROID_HOME, GITHUB_REPOSITORY
 
-SIGNED_APK="$(realpath "$1")"
+APK_DIR="$1"
 OUT_DIR="$2"
+APP_ID="com.nononsenseapps.feeder.fork"
 
 WORK_DIR="$(mktemp -d)"
-mkdir "$WORK_DIR/repo"
-cp "$SIGNED_APK" "$WORK_DIR/repo/"
+mkdir "$WORK_DIR/repo" "$WORK_DIR/metadata"
+cp "$APK_DIR"/*.apk "$WORK_DIR/repo/"
 
 cat > "$WORK_DIR/config.yml" <<EOF
 repo_url: $3
@@ -21,8 +24,9 @@ repo_pubkey: $5
 sdk_path: $ANDROID_HOME
 EOF
 chmod 600 "$WORK_DIR/config.yml"
+echo "CurrentVersionCode: $6" > "$WORK_DIR/metadata/$APP_ID.yml"
 
-(cd "$WORK_DIR" && fdroid update --nosign --create-metadata)
+(cd "$WORK_DIR" && fdroid update --nosign)
 
 mkdir -p "$OUT_DIR"
 cp -r "$WORK_DIR/repo" "$OUT_DIR/"

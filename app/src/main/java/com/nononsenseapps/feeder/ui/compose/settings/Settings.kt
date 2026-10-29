@@ -1019,6 +1019,10 @@ fun SettingsList(
 
         HorizontalDivider(modifier = Modifier.width(dimens.maxContentWidth))
 
+        DataSettingsGroup()
+
+        HorizontalDivider(modifier = Modifier.width(dimens.maxContentWidth))
+
         ActionSetting(
             title = stringResource(id = R.string.send_bug_report),
             onClick = {

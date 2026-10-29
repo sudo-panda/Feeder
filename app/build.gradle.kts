@@ -353,35 +353,39 @@ val forkBuild =
         .substringAfter("=")
         .trim()
         .toInt()
-        .also { require(it in 0..999) { "forkBuild must be 0-999 to fit in versionCode" } }
+        .also { require(it in 1..999) { "forkBuild must be 1-999 to fit in versionCode" } }
 val upstreamVersionName = checkNotNull(android.defaultConfig.versionName)
 val upstreamVersionCode = checkNotNull(android.defaultConfig.versionCode)
 
-// Fork: "beta" builds of pull requests install as a separate "Feeder beta" app.
-// Its version code is the beta workflow's run number, so every beta is an update.
-val forkBetaNumber = (findProperty("forkBetaNumber") as String?)?.toInt() ?: 1
-android.buildTypes.create("beta") {
-    initWith(android.buildTypes.getByName("release"))
-    matchingFallbacks += "release"
-}
+// Fork: a beta of the change that will become release <forkBuild>, see FORK.md.
+// "-PforkBeta=3" builds "<upstream>.<forkBuild>-beta.3".
+val forkBeta =
+    (findProperty("forkBeta") as String?)
+        ?.toInt()
+        ?.also { require(it in 1..99) { "forkBeta must be 1-99" } }
+
+// Version codes: upstream * 100000 + forkBuild * 100 for releases. Betas of the next release
+// sort between the previous release and it: upstream * 100000 + (forkBuild - 1) * 100 + beta.
+val forkVersionName =
+    if (forkBeta == null) "$upstreamVersionName.$forkBuild" else "$upstreamVersionName.$forkBuild-beta.$forkBeta"
+val forkVersionCode =
+    if (forkBeta == null) {
+        upstreamVersionCode * 100000 + forkBuild * 100
+    } else {
+        upstreamVersionCode * 100000 + (forkBuild - 1) * 100 + forkBeta
+    }
 
 androidComponents {
     onVariants { variant ->
         if (!variant.productFlavors.contains("store" to "fdroid")) {
             return@onVariants
         }
-        when (variant.buildType) {
-            "release" -> variant.applicationId.set("com.nononsenseapps.feeder.fork")
-            "beta" -> variant.applicationId.set("com.nononsenseapps.feeder.fork.beta")
+        if (variant.buildType == "release") {
+            variant.applicationId.set("com.nononsenseapps.feeder.fork")
         }
         variant.outputs.forEach { output ->
-            if (variant.buildType == "beta") {
-                output.versionName.set("$upstreamVersionName.$forkBuild-beta.$forkBetaNumber")
-                output.versionCode.set(forkBetaNumber)
-            } else {
-                output.versionName.set("$upstreamVersionName.$forkBuild")
-                output.versionCode.set(upstreamVersionCode * 1000 + forkBuild)
-            }
+            output.versionName.set(forkVersionName)
+            output.versionCode.set(forkVersionCode)
         }
     }
 }

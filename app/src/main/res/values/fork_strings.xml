@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork: strings added by this fork, kept apart from upstream's strings.xml -->
+<resources>
+  <string name="data">Data</string>
+  <string name="clear_search">Clear search</string>
+</resources>

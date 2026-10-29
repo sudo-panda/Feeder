@@ -8,7 +8,7 @@ builds a signed APK for every change. Upstream: <https://github.com/spacecowboy/
 1. Ask Claude (Claude Code, from the Claude app) for a change. Claude works on a
    `claude/*` branch, bumps the fork build number, and opens a pull request.
 2. The **Fork build** workflow lints, tests and builds every branch push.
-3. Optional: add the `beta` label to the pull request to try it on the phone first
+3. Each push to the pull request also publishes a beta, to try it on the phone first
    (see [Beta channel](#beta-channel)).
 4. Merge the pull request in the GitHub app.
 5. The workflow builds the release APK on `master`, signs it in a separate job,
@@ -21,7 +21,8 @@ builds a signed APK for every change. Upstream: <https://github.com/spacecowboy/
 Version = `<upstream version>.<forkBuild>`, with `forkBuild` taken from
 [`fork.properties`](fork.properties). Every fork change increases it by 1. Merging a
 new upstream release does not, so `2.25.0.2` becomes `2.25.1.2`.
-The version code is `<upstream versionCode> * 1000 + forkBuild`, so it always increases.
+The version code is `<upstream versionCode> * 100000 + forkBuild * 100`, so it always
+increases. Betas use the codes in between (see [Beta channel](#beta-channel)).
 
 The release app id is `com.nononsenseapps.feeder.fork`, so it can be installed next to
 the official Feeder. Move feeds over with OPML export/import.
@@ -31,17 +32,21 @@ A push to `master` whose version already has a release publishes nothing
 
 ## Beta channel
 
-To try a pull request on the phone before merging it, add the `beta` label to it. While
-the label is on, every push to the pull request publishes a new beta, and the workflow
-comments on the pull request when it's ready.
+Every push to a pull request publishes a new beta of the **same app**, and the workflow
+comments on the pull request when it's ready. Merging the pull request publishes the
+release. Pull requests and `master` run the same build; only the version differs.
 
-- Betas are a separate app, **Feeder beta** (`com.nononsenseapps.feeder.fork.beta`, orange
-  icon), with its own data. A broken beta can't affect the production app.
-- Betas are signed with a separate beta key, so they can never update the production app.
-- Betas come from a separate F-Droid repository on the `fdroid-beta` branch:
-  `https://raw.githubusercontent.com/sudo-panda/Feeder/fdroid-beta/repo`. The first beta
-  comment on a pull request includes the link with its fingerprint to add in F-Droid.
-- Version `<upstream version>.<forkBuild>-beta.<n>`. Only the last published beta is kept.
+- In the F-Droid app, turn on *Settings → Unstable updates* (or the app's own beta
+  option) to get betas as updates to Feeder. Without it, F-Droid only offers releases.
+- Betas are versioned `<upstream version>.<forkBuild>-beta.<n>` and sort between the
+  previous release and the next one, so merging the pull request updates beta users to
+  the release.
+- The F-Droid repo holds the latest release plus the newest beta if it is newer. Betas are
+  also GitHub pre-releases.
+- The pull request's workflow never sees the signing key: it builds an unsigned APK and
+  `fork_fdroid.yml` on `master` checks, signs and publishes it.
+- Pull requests that don't increase `forkBuild` (for example docs-only changes) get no
+  beta, since it wouldn't be newer than the installed release.
 - Pull requests from other people's forks are never built as betas.
 
 ## One-time setup
@@ -54,22 +59,18 @@ comments on the pull request when it's ready.
    - *Environment secrets*: add `SIGNING_PASSWORD`, a random password of at least
      32 characters from a password manager. Keep it in the password manager: without it,
      no further updates can be signed.
-4. **Settings → Environments → New environment** named `beta`, with *Environment
-   secrets*: `BETA_SIGNING_PASSWORD`, another random password of at least 32 characters.
-   Leave its deployment branches unrestricted: betas are built from pull requests.
-   Then, in the pull requests tab, create a label named `beta`.
-5. Merge the first pull request. The first release run creates the signing key
+4. Merge the first pull request. The first release run creates the signing key
    (`signing/release.p12`, encrypted with `SIGNING_PASSWORD`) and commits it.
-6. On the phone, open `https://sudo-panda.github.io/Feeder/repo/` (the F-Droid badge in the
+5. On the phone, open `https://sudo-panda.github.io/Feeder/repo/` (the F-Droid badge in the
    README) and tap the repository link to add it to F-Droid. Or, in the F-Droid app,
    *Settings → Repositories → +*, and enter
    `https://sudo-panda.github.io/Feeder/repo?fingerprint=<fingerprint>`, where
    `<fingerprint>` is the "Signing certificate SHA-256" from the release notes. F-Droid
    refuses the repo if the fingerprint doesn't match. Then install "Feeder" from it.
-7. After the first release, add **Settings → Rules → Rulesets → New branch ruleset**
+6. After the first release, add **Settings → Rules → Rulesets → New branch ruleset**
    targeting `master`: *Restrict deletions*, *Block force pushes*, *Require a pull
    request before merging*, with no bypass list.
-8. Make sure two-factor authentication is on for your GitHub account.
+7. Make sure two-factor authentication is on for your GitHub account.
 
 ## Cloud environment for Claude (local builds)
 
@@ -111,10 +112,10 @@ bar, then *Edit*):
   Gradle, fdroidserver and every other third-party tool run in jobs without secrets.
   fdroidserver builds the F-Droid repo with an unsigned index, and the signing job signs
   it with `jarsigner`.
-- The beta password lives in the separate `beta` environment and only signs the beta app
-  and beta repo. Any branch push could get at it (GitHub can't restrict it to labelled
-  pull requests), which is why betas are a separate app with a separate key: a leaked
-  beta key can't touch the production app.
+- Betas are signed with the release key, but only by `fork_fdroid.yml` running on
+  `master`: a pull request can only hand over an APK, which is checked (app id, beta
+  version) before signing. Every push to a pull request in this repo is published as a
+  beta without further review, which is why Claude only pushes once you approve a change.
 - The committed keystore is encrypted with the password (PKCS#12, AES-256). A random
   password of 32+ characters makes it infeasible to brute-force.
 - Third-party GitHub Actions are pinned to full commit SHAs, setup-gradle validates the

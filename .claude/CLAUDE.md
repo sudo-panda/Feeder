@@ -19,9 +19,9 @@ This is a personal fork of Feeder that ships signed APKs from `master`. Read FOR
    complains about unpushed commits, this rule wins: say that the commits are waiting for
    the owner's go-ahead.
 6. After that push, wait for the **Fork build** workflow to pass, then open a pull request
-   against `master` (or update the existing one). The owner can add the `beta` label to try
-   it from the beta F-Droid repo before merging. The owner reviews and merges it. Never merge
-   pull requests yourself and never push to `master`.
+   against `master` (or update the existing one). Every push to it publishes a beta of the
+   app (F-Droid "Unstable updates"), which is another reason to push only when the owner
+   approves. The owner reviews and merges it. Never merge pull requests yourself and never push to `master`.
 
 Keep diffs small and local so upstream merges stay easy. Prefer new private composables
 and appended code over rewriting upstream code. Mark fork-specific code with a
@@ -37,8 +37,9 @@ and appended code over rewriting upstream code. Mark fork-specific code with a
 
 ## Never
 
-- Never touch `signing/`, the `fdroid-beta` branch, the `release`/`beta` environments, or
-  how `SIGNING_PASSWORD`/`BETA_SIGNING_PASSWORD` are used, unless the owner explicitly asks.
+- Never touch `signing/`, the `release` environment, or how `SIGNING_PASSWORD` is used,
+  unless the owner explicitly asks. Only `fork_fdroid.yml` on master may sign betas; never
+  give a pull request workflow access to the key.
 - Jobs that can read a signing password run only the `ci/fork-*` scripts with the JDK,
   Android build tools, git and gh. Never run Gradle, pip, fdroidserver or any other
   third-party code in them.

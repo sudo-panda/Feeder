@@ -1,0 +1,49 @@
+#!/bin/bash -eu
+# Downloads the APKs for the F-Droid repo from GitHub releases: the latest release, plus
+# the newest beta (pre-release) if it is newer. Needs no secrets. Writes
+# current_version_code (the release, which F-Droid suggests) and cert_hex (the signing
+# certificate, public) to $GITHUB_OUTPUT. See FORK.md.
+#
+# Usage: ci/fork-fdroid-fetch <apk dir>
+# Env:   GH_TOKEN, ANDROID_HOME, GITHUB_OUTPUT
+
+APK_DIR="$1"
+BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+mkdir -p "$APK_DIR"
+
+version_code() {
+  "$BUILD_TOOLS/aapt2" dump badging "$1" | sed -n "1s/.* versionCode='\([0-9]*\)'.*/\1/p"
+}
+cert_hex() {
+  "$BUILD_TOOLS/apksigner" verify --print-certs-pem "$1" |
+    sed -n '/BEGIN CERTIFICATE/,/END CERTIFICATE/p' | grep -v CERTIFICATE |
+    base64 -d | od -An -v -tx1 | tr -d ' \n'
+}
+
+RELEASE_TAG="$(gh release list --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName')"
+gh release download "$RELEASE_TAG" --pattern '*.apk' --dir "$APK_DIR"
+RELEASE_APK="$(ls "$APK_DIR"/*.apk)"
+RELEASE_CODE="$(version_code "$RELEASE_APK")"
+CERT_HEX="$(cert_hex "$RELEASE_APK")"
+echo "Release $RELEASE_TAG ($RELEASE_CODE)"
+
+BETA_TAG="$(gh release list --limit 100 --json tagName,isPrerelease,createdAt \
+  --jq '[.[] | select(.isPrerelease)] | sort_by(.createdAt) | last | .tagName // empty')"
+if [ -n "$BETA_TAG" ]; then
+  BETA_DIR="$(mktemp -d)"
+  gh release download "$BETA_TAG" --pattern '*.apk' --dir "$BETA_DIR"
+  BETA_APK="$(ls "$BETA_DIR"/*.apk)"
+  BETA_CODE="$(version_code "$BETA_APK")"
+  if [ "$BETA_CODE" -le "$RELEASE_CODE" ]; then
+    echo "Beta $BETA_TAG ($BETA_CODE) is older than the release, leaving it out"
+  elif [ "$(cert_hex "$BETA_APK")" != "$CERT_HEX" ]; then
+    echo "::error::Beta $BETA_TAG is signed with a different key than the release"
+    exit 1
+  else
+    echo "Beta $BETA_TAG ($BETA_CODE)"
+    mv "$BETA_APK" "$APK_DIR/"
+  fi
+fi
+
+echo "current_version_code=$RELEASE_CODE" >> "$GITHUB_OUTPUT"
+echo "cert_hex=$CERT_HEX" >> "$GITHUB_OUTPUT"

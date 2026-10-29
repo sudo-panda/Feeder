@@ -4,18 +4,25 @@
 > upstream links further down. This fork is built and published separately.
 >
 > **What's different in this fork**
-> - **Boost-style article cards:** title and source first, then the image, then a row of
->   quick actions (save, share, open in browser, more).
-> - **Icons throughout:** in the article long-press menu, every drawer row and every
->   settings row. Tag folders show a folder icon with the expand arrow on the right, and
->   feeds inside a tag are indented.
+> - **Boost-style article cards:** bold title, one "feed · time" line, snippet, full-width
+>   image and a row of quick actions (save, share, open in browser, more), with tight corners
+>   and spacing.
+> - **Full-width search:** while searching, the search field takes the whole top bar, with a
+>   back arrow to close it.
+> - **Icons throughout:** in the article long-press menu and every settings row.
+> - **Redesigned sidebar:** app name header, the open feed or tag highlighted, titles and
+>   unread counts aligned, bold tags with an expand arrow, indented feeds inside tags, and
+>   read feeds dimmed.
+> - **More feed icons:** feeds that declare no icon fall back to their site's `favicon.ico`.
 > - **New app icon.**
+> - **Settings → Data:** importing and exporting feeds (OPML) and saved articles moved here
+>   from the feed screen's ⋮ menu.
 > - **Separate app id** (`com.nononsenseapps.feeder.fork`), so it installs next to the
->   official Feeder. Move feeds over with OPML export/import.
+>   official Feeder. Move feeds over with OPML export/import (*Settings → Data* in this fork).
 > - **Versioning:** `<upstream version>.<fork build>`, e.g. `2.25.0.1`.
 > - **Releases:** signed APKs on [GitHub Releases](https://github.com/sudo-panda/Feeder/releases)
->   and in this fork's own F-Droid repository (below). Pull requests can also be tried as a
->   separate "Feeder beta" app from a beta F-Droid repository, see [FORK.md](FORK.md).
+>   and in this fork's own F-Droid repository (below). Pull requests can be tried as betas
+>   of the same app: turn on *Unstable updates* in F-Droid, see [FORK.md](FORK.md).
 >
 > **Get the fork** from its F-Droid repository. Open this link on your phone and tap the
 > repository link (or scan the QR code) to add it to F-Droid with its signing fingerprint:
