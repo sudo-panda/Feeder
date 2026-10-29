@@ -302,6 +302,10 @@ class Repository(
 
     fun setAccentColor(value: AccentColor) = settingsStore.setAccentColor(value)
 
+    val readerAppearance = settingsStore.readerAppearance
+
+    fun setReaderAppearance(value: ReaderAppearance) = settingsStore.setReaderAppearance(value)
+
     val textScale = settingsStore.textScale
 
     fun setTextScale(value: Float) = settingsStore.setTextScale(value)

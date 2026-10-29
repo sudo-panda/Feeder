@@ -104,6 +104,8 @@ import com.nononsenseapps.feeder.model.html.LinearVideo
 import com.nononsenseapps.feeder.ui.compose.coil.RestrainedFillWidthScaling
 import com.nononsenseapps.feeder.ui.compose.coil.RestrainedFitScaling
 import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
+import com.nononsenseapps.feeder.ui.compose.feedarticle.LocalReaderBleed
+import com.nononsenseapps.feeder.ui.compose.feedarticle.bleed
 import com.nononsenseapps.feeder.ui.compose.layouts.Table
 import com.nononsenseapps.feeder.ui.compose.layouts.TableCell
 import com.nononsenseapps.feeder.ui.compose.layouts.TableData
@@ -524,6 +526,8 @@ fun LinearImageContent(
                 contentAlignment = Alignment.Center,
                 modifier =
                     Modifier
+                        // Fork: edge-to-edge images, see LocalReaderBleed
+                        .bleed(LocalReaderBleed.current)
                         .clip(RectangleShape)
                         .clickable(
                             enabled = linearImage.link != null,

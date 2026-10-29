@@ -1,21 +1,12 @@
 package com.nononsenseapps.feeder.ui.compose.feedarticle
 
 import android.util.Log
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.indication
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,20 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.ContentAlpha
-import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BookmarkAdded
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Terrain
-import androidx.compose.material.icons.outlined.Timelapse
-import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,15 +31,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -74,15 +54,14 @@ import com.nononsenseapps.feeder.model.ThumbnailImage
 import com.nononsenseapps.feeder.ui.compose.coil.RestrainedCropScaling
 import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
-import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
 import com.nononsenseapps.feeder.ui.compose.text.WithTooltipIfNotBlank
 import com.nononsenseapps.feeder.ui.compose.text.rememberMaxImageWidth
 import com.nononsenseapps.feeder.ui.compose.theme.LinkTextStyle
 import com.nononsenseapps.feeder.ui.compose.theme.LocalDimens
+import com.nononsenseapps.feeder.ui.compose.theme.LocalReaderAppearance
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.utils.ProvideScaledText
 import com.nononsenseapps.feeder.ui.compose.utils.ScreenType
-import com.nononsenseapps.feeder.ui.compose.utils.focusableInNonTouchMode
 import my.nanihadesuka.compose.ColumnScrollbar
 import my.nanihadesuka.compose.ScrollbarSettings
 import kotlin.math.roundToInt
@@ -106,9 +85,23 @@ fun ReaderView(
     contentImageUrls: Set<String>,
     modifier: Modifier = Modifier,
     articleScrollState: ScrollState = rememberScrollState(),
+    onShare: () -> Unit = {},
+    onOpenInBrowser: () -> Unit = {},
+    onMore: () -> Unit = {},
     articleBody: @Composable (indexOffset: Int) -> Unit,
 ) {
     val dimens = LocalDimens.current
+    // Fork: images and the action bar reach the screen edges when the reader fills the screen
+    val bleed =
+        if (
+            screenType == ScreenType.SINGLE &&
+            LocalReaderAppearance.current.edgeToEdgeImages &&
+            LocalConfiguration.current.screenWidthDp.dp <= dimens.maxReaderWidth + dimens.margin * 2
+        ) {
+            dimens.margin
+        } else {
+            0.dp
+        }
 
     val readTimeSecs =
         remember(wordCount) {
@@ -143,181 +136,18 @@ fun ReaderView(
                         },
             ) {
                 var offsetCounter = 1
-                run {
-                    val goToFeedLabel = stringResource(R.string.go_to_feed, feedTitle)
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier =
-                            Modifier
-                                .width(dimens.maxReaderWidth)
-                                .semantics(mergeDescendants = true) {
-                                    try {
-                                        customActions =
-                                            listOf(
-                                                // TODO enclosure?
-                                                CustomAccessibilityAction(goToFeedLabel) {
-                                                    onFeedTitleClick()
-                                                    true
-                                                },
-                                            )
-                                    } catch (e: Exception) {
-                                        // Observed nullpointer exception when setting customActions
-                                        // No clue why it could be null
-                                        Log.e("FeederReaderScreen", "Exception in semantics", e)
-                                    }
-                                },
-                    ) {
-                        if (articleTitle.isNotBlank()) {
-                            WithBidiDeterminedLayoutDirection(paragraph = articleTitle) {
-                                val interactionSource = remember { MutableInteractionSource() }
-                                Text(
-                                    text = articleTitle,
-                                    style = MaterialTheme.typography.headlineLarge,
-                                    modifier =
-                                        Modifier
-                                            .indication(interactionSource, LocalIndication.current)
-                                            .focusableInNonTouchMode(interactionSource = interactionSource)
-                                            .width(dimens.maxReaderWidth),
-                                )
-                            }
-                        }
-                        ProvideScaledText(
-                            style =
-                                MaterialTheme.typography.titleMedium.merge(
-                                    LinkTextStyle(),
-                                ),
-                        ) {
-                            WithBidiDeterminedLayoutDirection(paragraph = feedTitle) {
-                                Text(
-                                    text = feedTitle,
-                                    modifier =
-                                        Modifier
-                                            .width(dimens.maxReaderWidth)
-                                            .clearAndSetSemantics {
-                                                contentDescription = feedTitle
-                                            }.clickable {
-                                                onFeedTitleClick()
-                                            },
-                                )
-                            }
-                        }
-                        if (authorDate != null) {
-                            ProvideScaledText(style = MaterialTheme.typography.titleMedium) {
-                                CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
-                                    WithBidiDeterminedLayoutDirection(paragraph = authorDate) {
-                                        val interactionSource = remember { MutableInteractionSource() }
-                                        Text(
-                                            text = authorDate,
-                                            modifier =
-                                                Modifier
-                                                    .width(dimens.maxReaderWidth)
-                                                    .indication(interactionSource, LocalIndication.current)
-                                                    .focusableInNonTouchMode(interactionSource = interactionSource),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.width(dimens.maxReaderWidth),
-                        ) {
-                            FilterChip(
-                                selected = saved,
-                                leadingIcon =
-                                    {
-                                        // Filter chip only animates between null and non-null values by itself so animate manually
-                                        AnimatedContent(
-                                            targetState = saved,
-                                            transitionSpec = { fadeIn() togetherWith fadeOut() },
-                                        ) { target ->
-                                            Icon(
-                                                imageVector =
-                                                    if (target) {
-                                                        Icons.Outlined.BookmarkAdded
-                                                    } else {
-                                                        Icons.Outlined.BookmarkBorder
-                                                    },
-                                                contentDescription = null,
-                                                modifier = Modifier.size(FilterChipDefaults.IconSize),
-                                            )
-                                        }
-                                    },
-                                onClick = onSaveClick,
-                                label = {
-                                    AnimatedContent(
-                                        targetState = saved,
-                                    ) { target ->
-                                        Text(
-                                            if (target) {
-                                                stringResource(R.string.saved_adjective)
-                                            } else {
-                                                stringResource(R.string.save_article)
-                                            },
-                                        )
-                                    }
-                                },
-                            )
-                            AnimatedVisibility(
-                                visible = !isUnread,
-                                exit = fadeOut(),
-                            ) {
-                                SuggestionChip(
-                                    icon =
-                                        {
-                                            Icon(
-                                                imageVector = Icons.Outlined.VisibilityOff,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(FilterChipDefaults.IconSize),
-                                            )
-                                        },
-                                    onClick = onMarkAsUnread,
-                                    label = {
-                                        Text(stringResource(R.string.mark_as_unread))
-                                    },
-                                )
-                            }
-                        }
-                        if (readTimeSecs > 0) {
-                            ProvideScaledText(style = MaterialTheme.typography.titleMedium) {
-                                CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.width(dimens.maxReaderWidth),
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Timelapse,
-                                            contentDescription = null,
-                                        )
-                                        val seconds = "%02d".format(readTimeSecs % 60)
-                                        val readTimeText =
-                                            pluralStringResource(
-                                                id = R.plurals.n_minutes,
-                                                count = readTimeSecs / 60,
-                                            ).format(
-                                                "${readTimeSecs / 60}:$seconds",
-                                            )
-                                        WithBidiDeterminedLayoutDirection(paragraph = readTimeText) {
-                                            val interactionSource =
-                                                remember { MutableInteractionSource() }
-                                            Text(
-                                                text = readTimeText,
-                                                modifier =
-                                                    Modifier
-                                                        .weight(1f)
-                                                        .indication(
-                                                            interactionSource,
-                                                            LocalIndication.current,
-                                                        ).focusableInNonTouchMode(interactionSource = interactionSource),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                // Fork: Boost-style header replaces the title, feed, author, chips and read time
+                ForkReaderHeader(
+                    feedTitle = feedTitle,
+                    articleTitle = articleTitle,
+                    authorDate = authorDate,
+                    readTimeSecs = readTimeSecs,
+                    onFeedTitleClick = onFeedTitleClick,
+                    modifier =
+                        Modifier
+                            .padding(top = 8.dp)
+                            .width(dimens.maxReaderWidth),
+                )
 
                 if (enclosure.present) {
                     offsetCounter++
@@ -387,8 +217,9 @@ fun ReaderView(
                                 contentAlignment = Alignment.Center,
                                 modifier =
                                     Modifier
-                                        .clip(RectangleShape)
-                                        .width(dimens.maxReaderWidth),
+                                        .width(dimens.maxReaderWidth)
+                                        .bleed(bleed)
+                                        .clip(RectangleShape),
                             ) {
                                 WithTooltipIfNotBlank(tooltip = stringResource(id = R.string.article_image)) {
                                     val maxImageWidth by rememberMaxImageWidth()
@@ -429,7 +260,24 @@ fun ReaderView(
                     }
                 }
 
-                articleBody(offsetCounter)
+                offsetCounter++
+                ForkReaderActionBar(
+                    saved = saved,
+                    onSaveClick = onSaveClick,
+                    onShare = onShare,
+                    onOpenInBrowser = onOpenInBrowser,
+                    isUnread = isUnread,
+                    onMarkAsUnread = onMarkAsUnread,
+                    onMore = onMore,
+                    modifier =
+                        Modifier
+                            .width(dimens.maxReaderWidth)
+                            .bleed(bleed),
+                )
+
+                CompositionLocalProvider(LocalReaderBleed provides bleed) {
+                    articleBody(offsetCounter)
+                }
 
                 // Bottom spacing
                 Spacer(modifier = Modifier.height(92.dp))

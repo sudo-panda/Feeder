@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -52,8 +53,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -114,6 +118,7 @@ fun ArticleScreen(
     mainActivityViewModel: MainActivityViewModel,
     modifier: Modifier = Modifier,
     onNavigateToArticle: (Long) -> Unit = {},
+    onNavigateToTextSettings: () -> Unit = {},
 ) {
     BackHandler(onBack = onNavigateUp)
     val di = LocalDI.current
@@ -164,6 +169,7 @@ fun ArticleScreen(
 
     ArticleScreen(
         viewState = viewState,
+        onTextSettings = onNavigateToTextSettings,
         onToggleFullText = viewModel::toggleFullText,
         onMarkAsUnread = viewModel::markAsUnread,
         onShare = {
@@ -287,8 +293,21 @@ fun ArticleScreen(
     ttsOnUserScroll: () -> Unit = {},
     isPagingMode: Boolean = false,
     isAnimatedPaging: Boolean = false,
+    onTextSettings: () -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    // Fork: Boost-style reader appearance panel
+    var showAppearance by rememberSaveable { mutableStateOf(false) }
+    if (showAppearance) {
+        ReaderAppearanceSheet(
+            onDismiss = { showAppearance = false },
+            onMoreTextSettings = {
+                showAppearance = false
+                onTextSettings()
+            },
+        )
+    }
 
     val bottomBarVisibleState = remember { MutableTransitionState(viewState.isBottomBarVisible) }
     LaunchedEffect(viewState.isBottomBarVisible) {
@@ -344,6 +363,15 @@ fun ArticleScreen(
                             Icon(
                                 Icons.Default.OpenInBrowser,
                                 contentDescription = stringResource(id = R.string.open_in_web_view),
+                            )
+                        }
+                    }
+
+                    PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.reader_appearance)) }) {
+                        IconButton(onClick = { showAppearance = true }) {
+                            Icon(
+                                Icons.Outlined.FormatSize,
+                                contentDescription = stringResource(id = R.string.reader_appearance),
                             )
                         }
                     }
@@ -553,6 +581,8 @@ fun ArticleScreen(
                 onOpenInCustomTab = onOpenInCustomTab,
                 onBookmark = onToggleBookmark,
                 onMarkAsUnread = onMarkAsUnread,
+                onShare = onShare,
+                onMore = { onShowToolbarMenu(true) },
                 modifier =
                     Modifier
                         .focusGroup()
@@ -686,6 +716,8 @@ fun ArticleContent(
     modifier: Modifier = Modifier,
     speechHighlight: SpeechHighlight? = null,
     onUserScroll: (() -> Unit)? = null,
+    onShare: () -> Unit = {},
+    onMore: () -> Unit = {},
 ) {
     val toolbarColor = MaterialTheme.colorScheme.surface.toArgb()
 
@@ -741,6 +773,9 @@ fun ArticleContent(
         contentImageUrls = contentImageUrls,
         modifier = if (onUserScroll != null) modifier.stopSpeechFollowingOnAccessibilityScroll(articleScrollState, onUserScroll) else modifier,
         articleScrollState = articleScrollState,
+        onShare = onShare,
+        onOpenInBrowser = { viewState.articleLink?.let { activityLauncher.openLinkInBrowser(link = it) } },
+        onMore = onMore,
     ) { indexOffset ->
         var offsetCounter = indexOffset
 

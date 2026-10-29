@@ -4,6 +4,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -15,6 +16,7 @@ import com.nononsenseapps.feeder.base.DIAwareComponentActivity
 import com.nononsenseapps.feeder.base.diAwareViewModel
 import com.nononsenseapps.feeder.ui.CommonActivityViewModel
 import com.nononsenseapps.feeder.ui.compose.theme.FeederTheme
+import com.nononsenseapps.feeder.ui.compose.theme.LocalReaderAppearance
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.theme.ProvideTypographySettings
 import org.kodein.di.compose.withDI
@@ -29,6 +31,7 @@ fun DIAwareComponentActivity.withAllProviders(content: @Composable () -> Unit) {
         val textScale by viewModel.textScale.collectAsStateWithLifecycle()
         val font by viewModel.font.collectAsStateWithLifecycle()
         val justifyText by viewModel.justifyText.collectAsStateWithLifecycle()
+        val readerAppearance by viewModel.readerAppearance.collectAsStateWithLifecycle()
         withFoldableHinge {
             withWindowMetrics {
                 withWindowSize {
@@ -39,7 +42,9 @@ fun DIAwareComponentActivity.withAllProviders(content: @Composable () -> Unit) {
                             dynamicColors = accentColor == AccentColor.Wallpaper,
                             accentColor = accentColor,
                         ) {
-                            WithFeederTextToolbar(content)
+                            CompositionLocalProvider(LocalReaderAppearance provides readerAppearance) {
+                                WithFeederTextToolbar(content)
+                            }
                         }
                     }
                 }
