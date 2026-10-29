@@ -357,17 +357,31 @@ val forkBuild =
 val upstreamVersionName = checkNotNull(android.defaultConfig.versionName)
 val upstreamVersionCode = checkNotNull(android.defaultConfig.versionCode)
 
+// Fork: "beta" builds of pull requests install as a separate "Feeder beta" app.
+// Its version code is the beta workflow's run number, so every beta is an update.
+val forkBetaNumber = (findProperty("forkBetaNumber") as String?)?.toInt() ?: 1
+android.buildTypes.create("beta") {
+    initWith(android.buildTypes.getByName("release"))
+    matchingFallbacks += "release"
+}
+
 androidComponents {
     onVariants { variant ->
         if (!variant.productFlavors.contains("store" to "fdroid")) {
             return@onVariants
         }
-        if (variant.buildType == "release") {
-            variant.applicationId.set("com.nononsenseapps.feeder.fork")
+        when (variant.buildType) {
+            "release" -> variant.applicationId.set("com.nononsenseapps.feeder.fork")
+            "beta" -> variant.applicationId.set("com.nononsenseapps.feeder.fork.beta")
         }
         variant.outputs.forEach { output ->
-            output.versionName.set("$upstreamVersionName.$forkBuild")
-            output.versionCode.set(upstreamVersionCode * 1000 + forkBuild)
+            if (variant.buildType == "beta") {
+                output.versionName.set("$upstreamVersionName.$forkBuild-beta.$forkBetaNumber")
+                output.versionCode.set(forkBetaNumber)
+            } else {
+                output.versionName.set("$upstreamVersionName.$forkBuild")
+                output.versionCode.set(upstreamVersionCode * 1000 + forkBuild)
+            }
         }
     }
 }

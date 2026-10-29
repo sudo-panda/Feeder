@@ -1,0 +1,34 @@
+#!/bin/bash -eu
+# Last step of a beta release: replaces the fdroid-beta branch with a single commit
+# holding the signed F-Droid repo and the (password protected) beta key, then comments
+# on the pull request. Served from raw.githubusercontent.com. See FORK.md.
+#
+# Usage: ci/fork-beta-publish <repo dir> <keystore> <version> <cert sha256> <repo url>
+# Env:   GH_TOKEN, PR_NUMBER
+
+REPO_DIR="$1"
+KEYSTORE="$2"
+VERSION="$3"
+CERT_SHA256="$4"
+REPO_URL="$5"
+
+SITE="$(mktemp -d)"
+cp -r "$REPO_DIR" "$SITE/repo"
+mkdir "$SITE/signing"
+cp "$KEYSTORE" "$SITE/signing/beta.p12"
+
+git config user.name "github-actions[bot]"
+git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+INDEX_FILE="$(mktemp -u)"
+GIT_INDEX_FILE="$INDEX_FILE" git --work-tree="$SITE" add --all
+COMMIT="$(git commit-tree "$(GIT_INDEX_FILE="$INDEX_FILE" git write-tree)" -m "Beta $VERSION")"
+git push --force origin "$COMMIT:refs/heads/fdroid-beta"
+rm -rf "$SITE" "$INDEX_FILE"
+
+gh pr comment "$PR_NUMBER" --body "**Feeder beta $VERSION** is in the beta F-Droid repository. F-Droid will offer it as an update to \"Feeder beta\".
+
+First time only, add the repository in F-Droid (*Settings → Repositories → +*):
+\`\`\`
+$REPO_URL?fingerprint=$CERT_SHA256
+\`\`\`"
+echo "::notice::Published beta $VERSION to $REPO_URL"

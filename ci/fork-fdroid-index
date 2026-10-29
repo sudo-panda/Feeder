@@ -1,0 +1,29 @@
+#!/bin/bash -eu
+# Builds an F-Droid repository containing one signed APK, with an UNSIGNED index.
+# Runs fdroidserver (third-party, pinned in ci/fdroidserver-requirements.txt) in a job
+# without secrets; ci/fork-sign-index signs the index afterwards. See FORK.md.
+#
+# Usage: ci/fork-fdroid-index <signed.apk> <output dir> <repo url> <repo name> <cert hex>
+# Env:   ANDROID_HOME, GITHUB_REPOSITORY
+
+SIGNED_APK="$(realpath "$1")"
+OUT_DIR="$2"
+
+WORK_DIR="$(mktemp -d)"
+mkdir "$WORK_DIR/repo"
+cp "$SIGNED_APK" "$WORK_DIR/repo/"
+
+cat > "$WORK_DIR/config.yml" <<EOF
+repo_url: $3
+repo_name: $4
+repo_description: Personal builds of Feeder from github.com/$GITHUB_REPOSITORY
+repo_pubkey: $5
+sdk_path: $ANDROID_HOME
+EOF
+chmod 600 "$WORK_DIR/config.yml"
+
+(cd "$WORK_DIR" && fdroid update --nosign --create-metadata)
+
+mkdir -p "$OUT_DIR"
+cp -r "$WORK_DIR/repo" "$OUT_DIR/"
+rm -rf "$WORK_DIR"

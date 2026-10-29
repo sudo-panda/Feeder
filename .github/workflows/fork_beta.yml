@@ -1,0 +1,188 @@
+# Publishes a pull request as a beta to the beta F-Droid repository. See FORK.md.
+#
+# Opt-in per pull request: add the "beta" label. While the label is on, every push to the
+# pull request publishes a new beta. Betas install as a separate "Feeder beta" app signed
+# with a separate beta key, so they can never update or break the production app.
+#
+# Security notes:
+# - The beta key's password lives in the "beta" environment. Jobs that can read it only
+#   run the ci/ scripts with the JDK, Android build tools, git and gh. Gradle, fdroidserver
+#   and every other third-party tool run in jobs without secrets.
+# - Pull requests from other people's forks are never built here.
+# - Third-party actions are pinned to full commit SHAs, Python packages to hashes.
+name: Fork beta
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: fork-beta-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: >-
+      contains(github.event.pull_request.labels.*.name, 'beta') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: setup JDK
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          java-version: "25"
+          distribution: "temurin"
+
+      # Also validates the checksum of the Gradle wrapper jar
+      - name: gradle setup
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: build beta apk
+        run: ./gradlew assembleFdroidBeta -PforkBetaNumber=${{ github.run_number }}
+
+      - name: save unsigned apk
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-beta-apk
+          retention-days: 1
+          if-no-files-found: error
+          path: app/build/outputs/apk/fdroid/beta/app-fdroid-beta-unsigned.apk
+
+  sign:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Holds the BETA_SIGNING_PASSWORD secret
+    environment: beta
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.prepare.outputs.version }}
+      repo_url: ${{ steps.prepare.outputs.repo_url }}
+      cert_sha256: ${{ steps.sign.outputs.cert_sha256 }}
+      cert_hex: ${{ steps.sign.outputs.cert_hex }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: download unsigned apk
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unsigned-beta-apk
+
+      - name: prepare
+        id: prepare
+        env:
+          BETA_SIGNING_PASSWORD: ${{ secrets.BETA_SIGNING_PASSWORD }}
+        run: ci/fork-beta-prepare app-fdroid-beta-unsigned.apk signed/beta.p12
+
+      - name: sign apk
+        id: sign
+        env:
+          KEY_PASSWORD: ${{ secrets.BETA_SIGNING_PASSWORD }}
+        run: >-
+          ci/fork-sign-apk app-fdroid-beta-unsigned.apk signed/beta.p12
+          signed/feeder-beta-${{ steps.prepare.outputs.version }}.apk
+
+      - name: upload signed apk and (encrypted, public) keystore
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: signed-beta
+          retention-days: 1
+          if-no-files-found: error
+          path: signed/
+
+  index:
+    needs: sign
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: download signed apk
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: signed-beta
+          path: signed
+
+      - name: setup python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: install fdroidserver
+        run: pip install --require-hashes -r ci/fdroidserver-requirements.txt
+
+      - name: build F-Droid repo (unsigned index)
+        run: >-
+          ci/fork-fdroid-index signed/feeder-beta-${{ needs.sign.outputs.version }}.apk site
+          "${{ needs.sign.outputs.repo_url }}" "Feeder fork beta"
+          "${{ needs.sign.outputs.cert_hex }}"
+
+      - name: upload F-Droid repo
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-beta-repo
+          retention-days: 1
+          if-no-files-found: error
+          path: site/
+
+  publish:
+    needs: [sign, index]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: beta
+    concurrency:
+      group: fork-beta-publish
+      cancel-in-progress: false
+    permissions:
+      # To replace the fdroid-beta branch and comment on the pull request
+      contents: write
+      pull-requests: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: download signed apk
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: signed-beta
+          path: signed
+
+      - name: download F-Droid repo
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unsigned-beta-repo
+          path: site
+
+      - name: sign F-Droid index
+        env:
+          KEY_PASSWORD: ${{ secrets.BETA_SIGNING_PASSWORD }}
+        run: ci/fork-sign-index site/repo signed/beta.p12
+
+      - name: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: >-
+          ci/fork-beta-publish site/repo signed/beta.p12
+          "${{ needs.sign.outputs.version }}"
+          "${{ needs.sign.outputs.cert_sha256 }}"
+          "${{ needs.sign.outputs.repo_url }}"
