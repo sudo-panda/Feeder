@@ -38,6 +38,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridS
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
@@ -513,6 +514,11 @@ fun FeedScreen(
                 SearchBar(
                     expanded = false,
                     onExpandedChange = { onShowSearchBar(it) },
+                    // Fork: fill the whole bar while searching, with even margins
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 4.dp, end = 8.dp),
                     inputField = {
                         SearchBarDefaults.InputField(
                             query = viewState.search,
@@ -521,8 +527,8 @@ fun FeedScreen(
                             expanded = true,
                             onExpandedChange = onShowSearchBar,
                             placeholder = { Text(stringResource(R.string.search_verb)) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            trailingIcon = {
+                            // Fork: back arrow closes search, the X only clears the text
+                            leadingIcon = {
                                 IconButton(
                                     onClick = {
                                         onShowSearchBar(false)
@@ -530,9 +536,19 @@ fun FeedScreen(
                                     },
                                 ) {
                                     Icon(
-                                        Icons.Default.Close,
+                                        Icons.AutoMirrored.Filled.ArrowBack,
                                         contentDescription = stringResource(R.string.cancel_search),
                                     )
+                                }
+                            },
+                            trailingIcon = {
+                                if (viewState.search.isNotEmpty()) {
+                                    IconButton(onClick = { searchCallback("") }) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = stringResource(R.string.clear_search),
+                                        )
+                                    }
                                 }
                             },
                             modifier =
@@ -1042,34 +1058,41 @@ fun FeedScreen(
             SensibleTopAppBar(
                 scrollBehavior = scrollBehavior,
                 title =
-                    when (viewState.feedScreenTitle.type) {
-                        FeedType.FEED, FeedType.TAG -> viewState.feedScreenTitle.title
-                        FeedType.SAVED_ARTICLES -> stringResource(id = R.string.saved_articles)
-                        FeedType.ALL_FEEDS -> stringResource(id = R.string.all_feeds)
-                    }.let { title ->
-                        if (viewState.feedScreenTitle.type == FeedType.SAVED_ARTICLES ||
-                            !viewState.showTitleUnreadCount ||
-                            viewState.feedScreenTitle.unreadCount == 0 ||
-                            title == null
-                        ) {
-                            title
-                        } else {
-                            title + " ${
-                                stringResource(
-                                    id = R.string.title_unread_count,
-                                    viewState.feedScreenTitle.unreadCount,
-                                )
-                            }"
-                        }
-                    } ?: "",
+                    if (viewState.searchBarVisible) {
+                        ""
+                    } else {
+                        when (viewState.feedScreenTitle.type) {
+                            FeedType.FEED, FeedType.TAG -> viewState.feedScreenTitle.title
+                            FeedType.SAVED_ARTICLES -> stringResource(id = R.string.saved_articles)
+                            FeedType.ALL_FEEDS -> stringResource(id = R.string.all_feeds)
+                        }.let { title ->
+                            if (viewState.feedScreenTitle.type == FeedType.SAVED_ARTICLES ||
+                                !viewState.showTitleUnreadCount ||
+                                viewState.feedScreenTitle.unreadCount == 0 ||
+                                title == null
+                            ) {
+                                title
+                            } else {
+                                title + " ${
+                                    stringResource(
+                                        id = R.string.title_unread_count,
+                                        viewState.feedScreenTitle.unreadCount,
+                                    )
+                                }"
+                            }
+                        } ?: ""
+                    },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onOpenNavDrawer,
-                    ) {
-                        Icon(
-                            Icons.Default.Menu,
-                            contentDescription = stringResource(R.string.navigation_drawer_open),
-                        )
+                    // Fork: the search field takes the whole bar while searching
+                    if (!viewState.searchBarVisible) {
+                        IconButton(
+                            onClick = onOpenNavDrawer,
+                        ) {
+                            Icon(
+                                Icons.Default.Menu,
+                                contentDescription = stringResource(R.string.navigation_drawer_open),
+                            )
+                        }
                     }
                 },
                 actions = toolbarActions,
@@ -1241,7 +1264,8 @@ fun FeedListContent(
 
         val arrangement =
             when (viewState.feedItemStyle) {
-                FeedItemStyle.CARD -> Arrangement.spacedBy(LocalDimens.current.margin)
+                // Fork: tighter Boost-style spacing between cards
+                FeedItemStyle.CARD -> Arrangement.spacedBy(8.dp)
                 FeedItemStyle.COMPACT_CARD -> Arrangement.spacedBy(LocalDimens.current.margin)
                 FeedItemStyle.COMPACT -> Arrangement.spacedBy(0.dp)
                 FeedItemStyle.SUPER_COMPACT -> Arrangement.spacedBy(0.dp)
@@ -1265,7 +1289,7 @@ fun FeedListContent(
                                 WindowInsetsSides.Bottom,
                             ).run {
                                 when (viewState.feedItemStyle) {
-                                    FeedItemStyle.CARD -> addMargin(horizontal = LocalDimens.current.margin)
+                                    FeedItemStyle.CARD -> addMargin(horizontal = 8.dp)
                                     FeedItemStyle.COMPACT_CARD -> addMargin(horizontal = LocalDimens.current.margin)
                                     // No margin since dividers
                                     FeedItemStyle.COMPACT, FeedItemStyle.SUPER_COMPACT -> this

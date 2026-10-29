@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.icons.Icons
@@ -42,6 +44,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -51,6 +56,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -100,44 +106,47 @@ fun FeedItemCard(
     modifier: Modifier = Modifier,
     onShowDropdown: () -> Unit = {},
 ) {
+    // Fork: Boost-style card: bold title, one meta line, snippet, full-bleed image, quick actions
     ElevatedCard(
+        shape = RoundedCornerShape(6.dp),
         modifier = modifier,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier =
                 Modifier
                     .requiredHeightIn(min = minimumTouchSize)
                     .alpha(if (!item.unread) 0.75f else 1.0f),
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier =
-                    Modifier
-                        .padding(vertical = 8.dp, horizontal = 8.dp),
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 8.dp),
             ) {
-                FeedItemEitherIndicator(
-                    bookmarked = item.bookmarked && bookmarkIndicator,
-                    itemImage = null,
-                    feedImageUrl = item.feedImageUrl?.toString(),
-                    size = 16.dp,
-                )
-                FeedItemText(
-                    item = item,
-                    onOpenFeedItemInReader = onOpenFeedItemInReader,
-                    onOpenFeedItemInCustomTab = onOpenFeedItemInCustomTab,
-                    onOpenFeedItemInBrowser = onOpenFeedItemInBrowser,
-                    onMarkAboveAsRead = onMarkAboveAsRead,
-                    onMarkBelowAsRead = onMarkBelowAsRead,
-                    onShareItem = onShareItem,
-                    onToggleBookmark = onToggleBookmark,
-                    dropDownMenuExpanded = dropDownMenuExpanded,
-                    onDismissDropdown = onDismissDropdown,
-                    maxLines = maxLines,
-                    showOnlyTitle = showOnlyTitle,
-                    showReadingTime = showReadingTime,
-                )
+                if (item.title.isNotBlank()) {
+                    WithBidiDeterminedLayoutDirection(paragraph = item.title) {
+                        Text(
+                            text = item.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = if (item.unread) FontWeight.Bold else FontWeight.Normal,
+                            maxLines = maxLines,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+                FeedItemCardMetaLine(item = item, showReadingTime = showReadingTime)
+                // Feeds without titles always show the snippet
+                if ((!showOnlyTitle || item.title.isBlank()) && item.snippet.isNotBlank()) {
+                    WithBidiDeterminedLayoutDirection(paragraph = item.snippet) {
+                        Text(
+                            text = item.snippet,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = if (item.title.isBlank()) maxLines else 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
             }
             if (showThumbnail) {
                 item.image?.let { image ->
@@ -174,7 +183,6 @@ fun FeedItemCard(
                                 alignment = Alignment.Center,
                                 modifier =
                                     Modifier
-                                        .clip(MaterialTheme.shapes.medium)
                                         .fillMaxWidth()
                                         .aspectRatio(16.0f / 9.0f)
                                         .background(MaterialTheme.colorScheme.surfaceVariant)
@@ -187,11 +195,65 @@ fun FeedItemCard(
                 }
             }
             FeedItemCardActions(
-                bookmarked = item.bookmarked,
+                item = item,
                 onToggleBookmark = onToggleBookmark,
                 onShareItem = onShareItem,
                 onOpenFeedItemInBrowser = onOpenFeedItemInBrowser,
                 onShowDropdown = onShowDropdown,
+                dropDownMenuExpanded = dropDownMenuExpanded,
+                onDismissDropdown = onDismissDropdown,
+                onOpenFeedItemInReader = onOpenFeedItemInReader,
+                onOpenFeedItemInCustomTab = onOpenFeedItemInCustomTab,
+                onMarkAboveAsRead = onMarkAboveAsRead,
+                onMarkBelowAsRead = onMarkBelowAsRead,
+            )
+        }
+    }
+}
+
+// Fork: "[feed icon] Feed · 2 h · 4 min" under the title
+@Composable
+private fun FeedItemCardMetaLine(
+    item: FeedListItem,
+    showReadingTime: Boolean,
+) {
+    val readTimeSecs = remember(item.wordCount) { wordsToReadTimeSecs(item.wordCount) }
+    val readTimeText =
+        if (showReadingTime && readTimeSecs > 0) {
+            pluralStringResource(id = R.plurals.n_minutes, count = readTimeSecs / 60)
+                .format("${readTimeSecs / 60}:${"%02d".format(readTimeSecs % 60)}")
+        } else {
+            null
+        }
+    val meta = listOfNotNull(item.feedTitle, item.pubDate, readTimeText).filter { it.isNotBlank() }.joinToString(" · ")
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        item.feedImageUrl?.let { feedImageUrl ->
+            AsyncImage(
+                model =
+                    ImageRequest
+                        .Builder(LocalContext.current)
+                        .data(feedImageUrl.toString())
+                        .scale(Scale.FIT)
+                        .precision(Precision.INEXACT)
+                        .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier =
+                    Modifier
+                        .size(16.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+            )
+        }
+        WithBidiDeterminedLayoutDirection(paragraph = meta) {
+            Text(
+                text = meta,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -200,41 +262,78 @@ fun FeedItemCard(
 // Fork: Boost-style quick actions at the bottom of each card
 @Composable
 private fun FeedItemCardActions(
-    bookmarked: Boolean,
+    item: FeedListItem,
     onToggleBookmark: () -> Unit,
     onShareItem: () -> Unit,
     onOpenFeedItemInBrowser: () -> Unit,
     onShowDropdown: () -> Unit,
+    dropDownMenuExpanded: Boolean,
+    onDismissDropdown: () -> Unit,
+    onOpenFeedItemInReader: () -> Unit,
+    onOpenFeedItemInCustomTab: () -> Unit,
+    onMarkAboveAsRead: () -> Unit,
+    onMarkBelowAsRead: () -> Unit,
 ) {
     val tint = MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
     ) {
-        IconButton(onClick = onToggleBookmark) {
-            Icon(
-                if (bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                contentDescription =
-                    stringResource(
-                        if (bookmarked) R.string.unsave_article else R.string.save_article,
-                    ),
-                tint = tint,
-            )
-        }
-        IconButton(onClick = onShareItem) {
-            Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.share), tint = tint)
-        }
-        IconButton(onClick = onOpenFeedItemInBrowser) {
-            Icon(
-                Icons.Outlined.OpenInBrowser,
-                contentDescription = stringResource(R.string.open_article_in_default_browser),
-                tint = tint,
-            )
-        }
+        CardActionButton(
+            icon = if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
+            contentDescription = stringResource(if (item.bookmarked) R.string.unsave_article else R.string.save_article),
+            tint = if (item.bookmarked) MaterialTheme.colorScheme.primary else tint,
+            onClick = onToggleBookmark,
+        )
+        CardActionButton(
+            icon = Icons.Outlined.Share,
+            contentDescription = stringResource(R.string.share),
+            tint = tint,
+            onClick = onShareItem,
+        )
+        CardActionButton(
+            icon = Icons.Outlined.OpenInBrowser,
+            contentDescription = stringResource(R.string.open_article_in_default_browser),
+            tint = tint,
+            onClick = onOpenFeedItemInBrowser,
+        )
         Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onShowDropdown) {
-            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.open_menu), tint = tint)
+        // The menu is anchored to this button, also when opened by a long press on the card
+        Box {
+            CardActionButton(
+                icon = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.open_menu),
+                tint = tint,
+                onClick = onShowDropdown,
+            )
+            FeedItemDropdownMenu(
+                item = item,
+                expanded = dropDownMenuExpanded,
+                onDismissDropdown = onDismissDropdown,
+                onOpenFeedItemInReader = onOpenFeedItemInReader,
+                onOpenFeedItemInCustomTab = onOpenFeedItemInCustomTab,
+                onOpenFeedItemInBrowser = onOpenFeedItemInBrowser,
+                onMarkAboveAsRead = onMarkAboveAsRead,
+                onMarkBelowAsRead = onMarkBelowAsRead,
+                onShareItem = onShareItem,
+                onToggleBookmark = onToggleBookmark,
+            )
         }
+    }
+}
+
+@Composable
+private fun CardActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    tint: Color,
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick, modifier = Modifier.size(44.dp)) {
+        Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -273,7 +372,6 @@ fun RowScope.FeedItemText(
                 }
             }
         }
-    val closeMenuText = stringResource(id = R.string.close_menu)
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier =
@@ -323,119 +421,18 @@ fun RowScope.FeedItemText(
                     }
                 }
             }
-            DropdownMenu(
+            FeedItemDropdownMenu(
+                item = item,
                 expanded = dropDownMenuExpanded,
-                onDismissRequest = onDismissDropdown,
-                modifier = Modifier.onKeyEventLikeEscape(onDismissDropdown),
-            ) {
-                DropdownMenuItem(
-                    onClick = {
-                        onDismissDropdown()
-                        onOpenFeedItemInReader()
-                    },
-                    leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Article, contentDescription = null) },
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.open_article_in_reader),
-                        )
-                    },
-                )
-                DropdownMenuItem(
-                    onClick = {
-                        onDismissDropdown()
-                        onOpenFeedItemInCustomTab()
-                    },
-                    leadingIcon = { Icon(Icons.Outlined.Tab, contentDescription = null) },
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.open_article_in_custom_tab),
-                        )
-                    },
-                )
-                DropdownMenuItem(
-                    onClick = {
-                        onDismissDropdown()
-                        onOpenFeedItemInBrowser()
-                    },
-                    leadingIcon = { Icon(Icons.Outlined.OpenInBrowser, contentDescription = null) },
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.open_article_in_default_browser),
-                        )
-                    },
-                )
-                DropdownMenuItem(
-                    onClick = {
-                        onDismissDropdown()
-                        onToggleBookmark()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                            contentDescription = null,
-                        )
-                    },
-                    text = {
-                        Text(
-                            text =
-                                stringResource(
-                                    when (item.bookmarked) {
-                                        true -> R.string.unsave_article
-                                        false -> R.string.save_article
-                                    },
-                                ),
-                        )
-                    },
-                )
-                DropdownMenuItem(
-                    onClick = {
-                        onDismissDropdown()
-                        onMarkAboveAsRead()
-                    },
-                    leadingIcon = { Icon(Icons.Outlined.VerticalAlignTop, contentDescription = null) },
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.mark_items_above_as_read),
-                        )
-                    },
-                )
-                DropdownMenuItem(
-                    onClick = {
-                        onDismissDropdown()
-                        onMarkBelowAsRead()
-                    },
-                    leadingIcon = { Icon(Icons.Outlined.VerticalAlignBottom, contentDescription = null) },
-                    text = {
-                        Text(
-                            text = stringResource(id = R.string.mark_items_below_as_read),
-                        )
-                    },
-                )
-                DropdownMenuItem(
-                    onClick = {
-                        onDismissDropdown()
-                        onShareItem()
-                    },
-                    leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-                    text = {
-                        Text(
-                            text = stringResource(R.string.share),
-                        )
-                    },
-                )
-                // Hidden button for TalkBack
-                DropdownMenuItem(
-                    onClick = onDismissDropdown,
-                    text = {},
-                    modifier =
-                        Modifier
-                            .height(0.dp)
-                            .safeSemantics {
-                                contentDescription = closeMenuText
-                                role = Role.Button
-                            },
-                )
-            }
+                onDismissDropdown = onDismissDropdown,
+                onOpenFeedItemInReader = onOpenFeedItemInReader,
+                onOpenFeedItemInCustomTab = onOpenFeedItemInCustomTab,
+                onOpenFeedItemInBrowser = onOpenFeedItemInBrowser,
+                onMarkAboveAsRead = onMarkAboveAsRead,
+                onMarkBelowAsRead = onMarkBelowAsRead,
+                onShareItem = onShareItem,
+                onToggleBookmark = onToggleBookmark,
+            )
         }
         if (showReadingTime) {
             val readTimeSecs =
@@ -481,6 +478,136 @@ fun RowScope.FeedItemText(
                 }
             }
         }
+    }
+}
+
+// Fork: the article menu, shared by the long-press menu and the card's more button
+@Composable
+fun FeedItemDropdownMenu(
+    item: FeedListItem,
+    expanded: Boolean,
+    onDismissDropdown: () -> Unit,
+    onOpenFeedItemInReader: () -> Unit,
+    onOpenFeedItemInCustomTab: () -> Unit,
+    onOpenFeedItemInBrowser: () -> Unit,
+    onMarkAboveAsRead: () -> Unit,
+    onMarkBelowAsRead: () -> Unit,
+    onShareItem: () -> Unit,
+    onToggleBookmark: () -> Unit,
+) {
+    val closeMenuText = stringResource(id = R.string.close_menu)
+    DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = onDismissDropdown,
+        modifier = Modifier.onKeyEventLikeEscape(onDismissDropdown),
+    ) {
+        DropdownMenuItem(
+            onClick = {
+                onDismissDropdown()
+                onOpenFeedItemInReader()
+            },
+            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Article, contentDescription = null) },
+            text = {
+                Text(
+                    text = stringResource(id = R.string.open_article_in_reader),
+                )
+            },
+        )
+        DropdownMenuItem(
+            onClick = {
+                onDismissDropdown()
+                onOpenFeedItemInCustomTab()
+            },
+            leadingIcon = { Icon(Icons.Outlined.Tab, contentDescription = null) },
+            text = {
+                Text(
+                    text = stringResource(id = R.string.open_article_in_custom_tab),
+                )
+            },
+        )
+        DropdownMenuItem(
+            onClick = {
+                onDismissDropdown()
+                onOpenFeedItemInBrowser()
+            },
+            leadingIcon = { Icon(Icons.Outlined.OpenInBrowser, contentDescription = null) },
+            text = {
+                Text(
+                    text = stringResource(id = R.string.open_article_in_default_browser),
+                )
+            },
+        )
+        DropdownMenuItem(
+            onClick = {
+                onDismissDropdown()
+                onToggleBookmark()
+            },
+            leadingIcon = {
+                Icon(
+                    if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                    contentDescription = null,
+                )
+            },
+            text = {
+                Text(
+                    text =
+                        stringResource(
+                            when (item.bookmarked) {
+                                true -> R.string.unsave_article
+                                false -> R.string.save_article
+                            },
+                        ),
+                )
+            },
+        )
+        DropdownMenuItem(
+            onClick = {
+                onDismissDropdown()
+                onMarkAboveAsRead()
+            },
+            leadingIcon = { Icon(Icons.Outlined.VerticalAlignTop, contentDescription = null) },
+            text = {
+                Text(
+                    text = stringResource(id = R.string.mark_items_above_as_read),
+                )
+            },
+        )
+        DropdownMenuItem(
+            onClick = {
+                onDismissDropdown()
+                onMarkBelowAsRead()
+            },
+            leadingIcon = { Icon(Icons.Outlined.VerticalAlignBottom, contentDescription = null) },
+            text = {
+                Text(
+                    text = stringResource(id = R.string.mark_items_below_as_read),
+                )
+            },
+        )
+        DropdownMenuItem(
+            onClick = {
+                onDismissDropdown()
+                onShareItem()
+            },
+            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+            text = {
+                Text(
+                    text = stringResource(R.string.share),
+                )
+            },
+        )
+        // Hidden button for TalkBack
+        DropdownMenuItem(
+            onClick = onDismissDropdown,
+            text = {},
+            modifier =
+                Modifier
+                    .height(0.dp)
+                    .safeSemantics {
+                        contentDescription = closeMenuText
+                        role = Role.Button
+                    },
+        )
     }
 }
 

@@ -4,8 +4,11 @@
 > upstream links further down. This fork is built and published separately.
 >
 > **What's different in this fork**
-> - **Boost-style article cards:** title and source first, then the image, then a row of
->   quick actions (save, share, open in browser, more).
+> - **Boost-style article cards:** bold title, one "feed · time" line, snippet, full-width
+>   image and a row of quick actions (save, share, open in browser, more), with tight corners
+>   and spacing.
+> - **Full-width search:** while searching, the search field takes the whole top bar, with a
+>   back arrow to close it.
 > - **Icons throughout:** in the article long-press menu and every settings row.
 > - **Redesigned sidebar:** app name header, the open feed or tag highlighted, titles and
 >   unread counts aligned, bold tags with an expand arrow, indented feeds inside tags, and
