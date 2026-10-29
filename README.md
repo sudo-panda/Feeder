@@ -14,7 +14,7 @@
 >   unread counts aligned, bold tags with an expand arrow, indented feeds inside tags, and
 >   read feeds dimmed.
 > - **More feed icons:** feeds that declare no icon fall back to their site's `favicon.ico`.
-> - **New app icon.**
+> - **New app icon:** an F whose arms bend into RSS arcs, white on forest green.
 > - **Settings → Data:** importing and exporting feeds (OPML) and saved articles moved here
 >   from the feed screen's ⋮ menu.
 > - **Separate app id** (`com.nononsenseapps.feeder.fork`), so it installs next to the
