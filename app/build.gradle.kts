@@ -342,3 +342,32 @@ class RoomSchemaArgProvider(
         return listOf("room.schemaLocation=${schemaDir.path}")
     }
 }
+
+// Fork: version is "<upstream versionName>.<forkBuild>" and the app id differs from
+// upstream so both can be installed side by side. See FORK.md.
+val forkBuild =
+    rootProject
+        .file("fork.properties")
+        .readLines()
+        .first { it.startsWith("forkBuild=") }
+        .substringAfter("=")
+        .trim()
+        .toInt()
+        .also { require(it in 0..999) { "forkBuild must be 0-999 to fit in versionCode" } }
+val upstreamVersionName = checkNotNull(android.defaultConfig.versionName)
+val upstreamVersionCode = checkNotNull(android.defaultConfig.versionCode)
+
+androidComponents {
+    onVariants { variant ->
+        if (!variant.productFlavors.contains("store" to "fdroid")) {
+            return@onVariants
+        }
+        if (variant.buildType == "release") {
+            variant.applicationId.set("com.nononsenseapps.feeder.fork")
+        }
+        variant.outputs.forEach { output ->
+            output.versionName.set("$upstreamVersionName.$forkBuild")
+            output.versionCode.set(upstreamVersionCode * 1000 + forkBuild)
+        }
+    }
+}

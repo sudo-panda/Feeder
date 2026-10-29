@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,11 +17,22 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Article
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.OpenInBrowser
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.Tab
 import androidx.compose.material.icons.outlined.Terrain
+import androidx.compose.material.icons.outlined.VerticalAlignBottom
+import androidx.compose.material.icons.outlined.VerticalAlignTop
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -86,6 +98,7 @@ fun FeedItemCard(
     showOnlyTitle: Boolean,
     showReadingTime: Boolean,
     modifier: Modifier = Modifier,
+    onShowDropdown: () -> Unit = {},
 ) {
     ElevatedCard(
         modifier = modifier,
@@ -97,6 +110,35 @@ fun FeedItemCard(
                     .requiredHeightIn(min = minimumTouchSize)
                     .alpha(if (!item.unread) 0.75f else 1.0f),
         ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier =
+                    Modifier
+                        .padding(vertical = 8.dp, horizontal = 8.dp),
+            ) {
+                FeedItemEitherIndicator(
+                    bookmarked = item.bookmarked && bookmarkIndicator,
+                    itemImage = null,
+                    feedImageUrl = item.feedImageUrl?.toString(),
+                    size = 16.dp,
+                )
+                FeedItemText(
+                    item = item,
+                    onOpenFeedItemInReader = onOpenFeedItemInReader,
+                    onOpenFeedItemInCustomTab = onOpenFeedItemInCustomTab,
+                    onOpenFeedItemInBrowser = onOpenFeedItemInBrowser,
+                    onMarkAboveAsRead = onMarkAboveAsRead,
+                    onMarkBelowAsRead = onMarkBelowAsRead,
+                    onShareItem = onShareItem,
+                    onToggleBookmark = onToggleBookmark,
+                    dropDownMenuExpanded = dropDownMenuExpanded,
+                    onDismissDropdown = onDismissDropdown,
+                    maxLines = maxLines,
+                    showOnlyTitle = showOnlyTitle,
+                    showReadingTime = showReadingTime,
+                )
+            }
             if (showThumbnail) {
                 item.image?.let { image ->
                     // Don't render known super small images. Null is OK
@@ -144,35 +186,54 @@ fun FeedItemCard(
                     }
                 }
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier =
-                    Modifier
-                        .padding(vertical = 8.dp, horizontal = 8.dp),
-            ) {
-                FeedItemEitherIndicator(
-                    bookmarked = item.bookmarked && bookmarkIndicator,
-                    itemImage = null,
-                    feedImageUrl = item.feedImageUrl?.toString(),
-                    size = 16.dp,
-                )
-                FeedItemText(
-                    item = item,
-                    onOpenFeedItemInReader = onOpenFeedItemInReader,
-                    onOpenFeedItemInCustomTab = onOpenFeedItemInCustomTab,
-                    onOpenFeedItemInBrowser = onOpenFeedItemInBrowser,
-                    onMarkAboveAsRead = onMarkAboveAsRead,
-                    onMarkBelowAsRead = onMarkBelowAsRead,
-                    onShareItem = onShareItem,
-                    onToggleBookmark = onToggleBookmark,
-                    dropDownMenuExpanded = dropDownMenuExpanded,
-                    onDismissDropdown = onDismissDropdown,
-                    maxLines = maxLines,
-                    showOnlyTitle = showOnlyTitle,
-                    showReadingTime = showReadingTime,
-                )
-            }
+            FeedItemCardActions(
+                bookmarked = item.bookmarked,
+                onToggleBookmark = onToggleBookmark,
+                onShareItem = onShareItem,
+                onOpenFeedItemInBrowser = onOpenFeedItemInBrowser,
+                onShowDropdown = onShowDropdown,
+            )
+        }
+    }
+}
+
+// Fork: Boost-style quick actions at the bottom of each card
+@Composable
+private fun FeedItemCardActions(
+    bookmarked: Boolean,
+    onToggleBookmark: () -> Unit,
+    onShareItem: () -> Unit,
+    onOpenFeedItemInBrowser: () -> Unit,
+    onShowDropdown: () -> Unit,
+) {
+    val tint = MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        IconButton(onClick = onToggleBookmark) {
+            Icon(
+                if (bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                contentDescription =
+                    stringResource(
+                        if (bookmarked) R.string.unsave_article else R.string.save_article,
+                    ),
+                tint = tint,
+            )
+        }
+        IconButton(onClick = onShareItem) {
+            Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.share), tint = tint)
+        }
+        IconButton(onClick = onOpenFeedItemInBrowser) {
+            Icon(
+                Icons.Outlined.OpenInBrowser,
+                contentDescription = stringResource(R.string.open_article_in_default_browser),
+                tint = tint,
+            )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        IconButton(onClick = onShowDropdown) {
+            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.open_menu), tint = tint)
         }
     }
 }
@@ -272,6 +333,7 @@ fun RowScope.FeedItemText(
                         onDismissDropdown()
                         onOpenFeedItemInReader()
                     },
+                    leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Article, contentDescription = null) },
                     text = {
                         Text(
                             text = stringResource(id = R.string.open_article_in_reader),
@@ -283,6 +345,7 @@ fun RowScope.FeedItemText(
                         onDismissDropdown()
                         onOpenFeedItemInCustomTab()
                     },
+                    leadingIcon = { Icon(Icons.Outlined.Tab, contentDescription = null) },
                     text = {
                         Text(
                             text = stringResource(id = R.string.open_article_in_custom_tab),
@@ -294,6 +357,7 @@ fun RowScope.FeedItemText(
                         onDismissDropdown()
                         onOpenFeedItemInBrowser()
                     },
+                    leadingIcon = { Icon(Icons.Outlined.OpenInBrowser, contentDescription = null) },
                     text = {
                         Text(
                             text = stringResource(id = R.string.open_article_in_default_browser),
@@ -304,6 +368,12 @@ fun RowScope.FeedItemText(
                     onClick = {
                         onDismissDropdown()
                         onToggleBookmark()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                            contentDescription = null,
+                        )
                     },
                     text = {
                         Text(
@@ -322,6 +392,7 @@ fun RowScope.FeedItemText(
                         onDismissDropdown()
                         onMarkAboveAsRead()
                     },
+                    leadingIcon = { Icon(Icons.Outlined.VerticalAlignTop, contentDescription = null) },
                     text = {
                         Text(
                             text = stringResource(id = R.string.mark_items_above_as_read),
@@ -333,6 +404,7 @@ fun RowScope.FeedItemText(
                         onDismissDropdown()
                         onMarkBelowAsRead()
                     },
+                    leadingIcon = { Icon(Icons.Outlined.VerticalAlignBottom, contentDescription = null) },
                     text = {
                         Text(
                             text = stringResource(id = R.string.mark_items_below_as_read),
@@ -344,6 +416,7 @@ fun RowScope.FeedItemText(
                         onDismissDropdown()
                         onShareItem()
                     },
+                    leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
                     text = {
                         Text(
                             text = stringResource(R.string.share),

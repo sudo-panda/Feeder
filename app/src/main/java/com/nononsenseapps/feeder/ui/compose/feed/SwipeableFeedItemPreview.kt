@@ -292,6 +292,7 @@ fun SwipeableFeedItemPreview(
                     maxLines = maxLines,
                     showOnlyTitle = showOnlyTitle,
                     showReadingTime = showReadingTime,
+                    onShowDropdown = { dropDownMenuExpanded = true },
                     modifier =
                         Modifier.offset {
                             try {

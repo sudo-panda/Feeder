@@ -22,6 +22,10 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.DynamicFeed
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.minimumInteractiveComponentSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -293,7 +297,7 @@ private fun ExpandableTag(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             Modifier
-                .padding(top = 2.dp, bottom = 2.dp, end = 16.dp)
+                .padding(top = 2.dp, bottom = 2.dp)
                 .fillMaxWidth()
                 .height(48.dp)
                 .safeSemantics(mergeDescendants = true) {
@@ -312,26 +316,29 @@ private fun ExpandableTag(
                         )
                 },
     ) {
-        ExpandArrow(
-            degrees = angle,
-            onClick = {
-                onToggleExpansion(title)
-            },
-        )
-        Box(
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
                     .clickable(onClick = onItemClick)
                     .fillMaxHeight()
                     .weight(1.0f, fill = true),
         ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.minimumInteractiveComponentSize(),
+            ) {
+                Icon(
+                    if (expanded) Icons.Outlined.FolderOpen else Icons.Outlined.Folder,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                )
+            }
             Text(
                 text = title,
                 maxLines = 1,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.CenterStart),
+                modifier = Modifier.weight(1.0f),
             )
         }
         if (unreadCount > 0) {
@@ -351,6 +358,12 @@ private fun ExpandableTag(
                         },
             )
         }
+        ExpandArrow(
+            degrees = angle,
+            onClick = {
+                onToggleExpansion(title)
+            },
+        )
     }
 }
 
@@ -416,6 +429,7 @@ private fun ChildFeed(
         imageUrl = imageUrl,
         unreadCount = unreadCount,
         onItemClick = onItemClick,
+        modifier = Modifier.padding(start = 24.dp),
     )
 }
 
@@ -443,7 +457,11 @@ private fun AllFeeds(
         unreadCount = unreadCount,
         onItemClick = onItemClick,
         image = {
-            Box(modifier = Modifier.size(24.dp)) {}
+            Icon(
+                Icons.Outlined.DynamicFeed,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+            )
         },
     )
 }
@@ -454,12 +472,13 @@ private fun Feed(
     image: (@Composable () -> Unit),
     unreadCount: Int,
     onItemClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
         modifier =
-            Modifier
+            modifier
                 .clickable(onClick = onItemClick)
                 .padding(
                     start = 0.dp,
@@ -520,11 +539,13 @@ private fun Feed(
     imageUrl: String?,
     unreadCount: Int,
     onItemClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Feed(
         title = title,
         unreadCount = unreadCount,
         onItemClick = onItemClick,
+        modifier = modifier,
         image =
             if (imageUrl != null) {
                 {
@@ -552,7 +573,11 @@ private fun Feed(
                 }
             } else {
                 {
-                    Box(modifier = Modifier.size(24.dp)) {}
+                    Icon(
+                        Icons.Outlined.RssFeed,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                    )
                 }
             },
     )

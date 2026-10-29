@@ -30,8 +30,43 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.Article
+import androidx.compose.material.icons.automirrored.outlined.MenuOpen
+import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.automirrored.outlined.WrapText
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.outlined.Animation
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.BatteryChargingFull
+import androidx.compose.material.icons.outlined.BatterySaver
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Devices
+import androidx.compose.material.icons.outlined.DoneAll
+import androidx.compose.material.icons.outlined.FormatAlignJustify
+import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Inventory2
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Link
+import androidx.compose.material.icons.outlined.OpenInBrowser
+import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.RocketLaunch
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Swipe
+import androidx.compose.material.icons.outlined.Tag
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Title
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.VerticalSplit
+import androidx.compose.material.icons.outlined.ViewAgenda
+import androidx.compose.material.icons.outlined.ViewStream
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -474,6 +509,7 @@ fun SettingsList(
     ) {
         MenuSetting(
             title = stringResource(id = R.string.theme),
+            icon = { Icon(Icons.Outlined.Palette, contentDescription = null) },
             currentValue = currentThemeValue,
             values =
                 immutableListHolderOf(
@@ -490,6 +526,7 @@ fun SettingsList(
 
         SwitchSetting(
             title = stringResource(id = R.string.dynamic_theme_use),
+            icon = { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) },
             checked = useDynamicTheme,
             onCheckedChange = onUseDynamicTheme,
             description =
@@ -510,6 +547,7 @@ fun SettingsList(
 
         MenuSetting(
             title = stringResource(id = R.string.dark_theme_preference),
+            icon = { Icon(Icons.Outlined.DarkMode, contentDescription = null) },
             currentValue = currentDarkThemePreference,
             values =
                 immutableListHolderOf(
@@ -534,6 +572,7 @@ fun SettingsList(
         ) {
             ListDialogSetting(
                 title = stringResource(id = R.string.filters),
+                icon = { Icon(Icons.Outlined.Block, contentDescription = null) },
                 dialogTitle = {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -563,12 +602,14 @@ fun SettingsList(
 
             SwitchSetting(
                 title = stringResource(id = R.string.apply_blocklist_to_summaries),
+                icon = { Icon(Icons.AutoMirrored.Outlined.Notes, contentDescription = null) },
                 checked = applyBlocklistToSummaries,
                 onCheckedChange = onApplyBlocklistToSummariesChange,
             )
 
             SwitchSetting(
                 title = stringResource(id = R.string.apply_blocklist_to_links),
+                icon = { Icon(Icons.Outlined.Link, contentDescription = null) },
                 checked = applyBlocklistToLinks,
                 onCheckedChange = onApplyBlocklistToLinksChange,
             )
@@ -587,6 +628,7 @@ fun SettingsList(
             ExternalSetting(
                 currentUiFontOption.name,
                 title = stringResource(R.string.text_settings),
+                icon = { Icon(Icons.Outlined.TextFields, contentDescription = null) },
                 onClick = onTextSettings,
             )
         }
@@ -598,6 +640,7 @@ fun SettingsList(
         ) {
             MenuSetting(
                 title = stringResource(id = R.string.check_for_updates),
+                icon = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
                 currentValue = currentSyncFrequencyValue.asSyncFreqOption(),
                 values =
                     ImmutableHolder(
@@ -615,24 +658,28 @@ fun SettingsList(
 
             SwitchSetting(
                 title = stringResource(id = R.string.on_startup),
+                icon = { Icon(Icons.Outlined.RocketLaunch, contentDescription = null) },
                 checked = syncOnStartupValue,
                 onCheckedChange = onSyncOnStartupChange,
             )
 
             SwitchSetting(
                 title = stringResource(id = R.string.only_on_wifi),
+                icon = { Icon(Icons.Outlined.Wifi, contentDescription = null) },
                 checked = syncOnlyOnWifiValue,
                 onCheckedChange = onSyncOnlyOnWifiChange,
             )
 
             SwitchSetting(
                 title = stringResource(id = R.string.only_when_charging),
+                icon = { Icon(Icons.Outlined.BatteryChargingFull, contentDescription = null) },
                 checked = syncOnlyWhenChargingValue,
                 onCheckedChange = onSyncOnlyWhenChargingChange,
             )
 
             MenuSetting(
                 title = stringResource(id = R.string.max_feed_items),
+                icon = { Icon(Icons.Outlined.Inventory2, contentDescription = null) },
                 currentValue = maxItemsPerFeedValue,
                 values =
                     immutableListHolderOf(
@@ -658,6 +705,7 @@ fun SettingsList(
                 {
                     onStartActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                 },
+                icon = { Icon(Icons.Outlined.BatterySaver, contentDescription = null) },
             )
 
             ExternalSetting(
@@ -666,6 +714,7 @@ fun SettingsList(
                 {
                     onOpenSyncSettings()
                 },
+                icon = { Icon(Icons.Outlined.Devices, contentDescription = null) },
             )
         }
 
@@ -676,6 +725,7 @@ fun SettingsList(
         ) {
             MenuSetting(
                 title = stringResource(id = R.string.sort),
+                icon = { Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = null) },
                 currentValue = currentSortingValue,
                 values =
                     immutableListHolderOf(
@@ -690,18 +740,21 @@ fun SettingsList(
 
             SwitchSetting(
                 title = stringResource(id = R.string.show_fab),
+                icon = { Icon(Icons.Outlined.DoneAll, contentDescription = null) },
                 checked = showFabValue,
                 onCheckedChange = onShowFabChange,
             )
 
             SwitchSetting(
                 title = stringResource(id = R.string.open_drawer_on_fab),
+                icon = { Icon(Icons.AutoMirrored.Outlined.MenuOpen, contentDescription = null) },
                 checked = isOpenDrawerOnFab,
                 onCheckedChange = onOpenDrawerOnFab,
             )
 
             MenuSetting(
                 title = stringResource(id = R.string.feed_item_style),
+                icon = { Icon(Icons.Outlined.ViewAgenda, contentDescription = null) },
                 currentValue = feedItemStyleValue.asFeedItemStyleOption(),
                 values = ImmutableHolder(FeedItemStyle.entries.map { it.asFeedItemStyleOption() }),
                 onSelection = {
@@ -714,6 +767,7 @@ fun SettingsList(
 
             MenuSetting(
                 title = stringResource(id = R.string.max_lines),
+                icon = { Icon(Icons.AutoMirrored.Outlined.WrapText, contentDescription = null) },
                 currentValue = maxLines,
                 values = ImmutableHolder(listOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)),
                 onSelection = setMaxLines,
@@ -724,12 +778,14 @@ fun SettingsList(
 
             SwitchSetting(
                 title = stringResource(id = R.string.show_only_title),
+                icon = { Icon(Icons.Outlined.Title, contentDescription = null) },
                 checked = showOnlyTitle,
                 onCheckedChange = onShowOnlyTitle,
             )
 
             MenuSetting(
                 title = stringResource(id = R.string.swipe_to_mark_as_read),
+                icon = { Icon(Icons.Outlined.Swipe, contentDescription = null) },
                 currentValue = swipeAsReadValue.asSwipeAsReadOption(),
                 values = ImmutableHolder(SwipeAsRead.entries.map { it.asSwipeAsReadOption() }),
                 onSelection = {
@@ -742,30 +798,35 @@ fun SettingsList(
 
             SwitchSetting(
                 title = stringResource(id = R.string.mark_as_read_on_scroll),
+                icon = { Icon(Icons.Outlined.Visibility, contentDescription = null) },
                 checked = isMarkAsReadOnScroll,
                 onCheckedChange = onMarkAsReadOnScroll,
             )
 
             SwitchSetting(
                 title = stringResource(id = R.string.show_thumbnails),
+                icon = { Icon(Icons.Outlined.Image, contentDescription = null) },
                 checked = showThumbnailsValue,
                 onCheckedChange = onShowThumbnailsChange,
             )
 
             SwitchSetting(
                 title = stringResource(id = R.string.show_reading_time),
+                icon = { Icon(Icons.Outlined.Timer, contentDescription = null) },
                 checked = showReadingTime,
                 onCheckedChange = onShowReadingTimeChange,
             )
 
             SwitchSetting(
                 title = stringResource(id = R.string.show_title_unread_count),
+                icon = { Icon(Icons.Outlined.Tag, contentDescription = null) },
                 checked = showTitleUnreadCount,
                 onCheckedChange = onShowTitleUnreadCountChange,
             )
 
             SwitchSetting(
                 title = stringResource(id = R.string.force_single_column),
+                icon = { Icon(Icons.Outlined.ViewStream, contentDescription = null) },
                 checked = forceSingleColumn,
                 onCheckedChange = onForceSingleColumnChange,
             )
@@ -778,6 +839,7 @@ fun SettingsList(
         ) {
             MenuSetting(
                 title = stringResource(id = R.string.open_item_by_default_with),
+                icon = { Icon(Icons.AutoMirrored.Outlined.Article, contentDescription = null) },
                 currentValue = currentItemOpenerValue.asItemOpenerOption(),
                 values =
                     immutableListHolderOf(
@@ -795,6 +857,7 @@ fun SettingsList(
 
             MenuSetting(
                 title = stringResource(id = R.string.open_links_with),
+                icon = { Icon(Icons.Outlined.OpenInBrowser, contentDescription = null) },
                 currentValue = currentLinkOpenerValue.asLinkOpenerOption(),
                 values =
                     immutableListHolderOf(
@@ -811,6 +874,7 @@ fun SettingsList(
 
             SwitchSetting(
                 title = stringResource(id = R.string.use_in_app_audio_player),
+                icon = { Icon(Icons.Outlined.Headphones, contentDescription = null) },
                 checked = useInAppAudioPlayer,
                 onCheckedChange = onUseInAppAudioPlayerChange,
                 description = stringResource(id = R.string.use_in_app_audio_player_description),
@@ -821,6 +885,7 @@ fun SettingsList(
             if (notCompactScreen) {
                 SwitchSetting(
                     title = stringResource(id = R.string.open_browser_in_split_screen),
+                    icon = { Icon(Icons.Outlined.VerticalSplit, contentDescription = null) },
                     checked = isOpenAdjacent,
                     onCheckedChange = onOpenAdjacent,
                 )
@@ -828,6 +893,7 @@ fun SettingsList(
 
             SwitchSetting(
                 title = stringResource(id = R.string.pref_paging_mode_title),
+                icon = { Icon(Icons.Outlined.AutoStories, contentDescription = null) },
                 checked = isPagingMode,
                 onCheckedChange = onIsPagingModeChange,
                 description = stringResource(id = R.string.pref_paging_mode_description),
@@ -836,6 +902,7 @@ fun SettingsList(
             if (isPagingMode) {
                 SwitchSetting(
                     title = stringResource(id = R.string.pref_animated_paging_title),
+                    icon = { Icon(Icons.Outlined.Animation, contentDescription = null) },
                     checked = isAnimatedPaging,
                     onCheckedChange = onIsAnimatedPagingChange,
                     description = stringResource(id = R.string.pref_animated_paging_description),
@@ -844,6 +911,7 @@ fun SettingsList(
 
             SwitchSetting(
                 title = stringResource(id = R.string.justify_article_text),
+                icon = { Icon(Icons.Outlined.FormatAlignJustify, contentDescription = null) },
                 checked = justifyText,
                 onCheckedChange = onJustifyTextChange,
                 description = stringResource(id = R.string.justify_article_text_description),
@@ -857,6 +925,7 @@ fun SettingsList(
         ) {
             SwitchSetting(
                 title = stringResource(id = R.string.only_on_wifi),
+                icon = { Icon(Icons.Outlined.Wifi, contentDescription = null) },
                 checked = loadImageOnlyOnWifiValue,
                 onCheckedChange = onLoadImageOnlyOnWifiChange,
             )
@@ -869,6 +938,7 @@ fun SettingsList(
         ) {
             SwitchSetting(
                 title = stringResource(id = R.string.use_detect_language),
+                icon = { Icon(Icons.Outlined.Language, contentDescription = null) },
                 checked = useDetectLanguage,
                 onCheckedChange = onUseDetectLanguageChange,
                 description = stringResource(id = R.string.description_for_read_aloud),
@@ -933,12 +1003,14 @@ fun SettingsList(
             if (canTranslate) {
                 SwitchSetting(
                     title = stringResource(id = R.string.translate_feed_cards_by_default),
+                    icon = { Icon(Icons.Outlined.Translate, contentDescription = null) },
                     checked = translateArticlePreviewsByDefault,
                     onCheckedChange = onTranslateArticlePreviewsByDefault,
                 )
 
                 SwitchSetting(
                     title = stringResource(id = R.string.translate_articles_by_default),
+                    icon = { Icon(Icons.Outlined.Translate, contentDescription = null) },
                     checked = translateArticlesByDefault,
                     onCheckedChange = onTranslateArticlesByDefault,
                 )
