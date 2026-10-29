@@ -6,9 +6,11 @@
 > **What's different in this fork**
 > - **Boost-style article cards:** title and source first, then the image, then a row of
 >   quick actions (save, share, open in browser, more).
-> - **Icons throughout:** in the article long-press menu, every drawer row and every
->   settings row. Tag folders show a folder icon with the expand arrow on the right, and
->   feeds inside a tag are indented.
+> - **Icons throughout:** in the article long-press menu and every settings row.
+> - **Redesigned sidebar:** app name header, the open feed or tag highlighted, titles and
+>   unread counts aligned, bold tags with an expand arrow, indented feeds inside tags, and
+>   read feeds dimmed.
+> - **More feed icons:** feeds that declare no icon fall back to their site's `favicon.ico`.
 > - **New app icon.**
 > - **Settings → Data:** importing and exporting feeds (OPML) and saved articles moved here
 >   from the feed screen's ⋮ menu.

@@ -237,6 +237,8 @@ fun FeedScreen(
         focusRequester = focusNavDrawer,
         drawerState = drawerState,
         navDrawerListState = navDrawerListStateToUse,
+        selectedId = viewState.currentFeedOrTag.id,
+        selectedTag = viewState.currentFeedOrTag.tag,
     ) {
         FeedScreen(
             viewState = viewState,
