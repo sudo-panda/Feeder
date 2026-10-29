@@ -1,3 +1,26 @@
+> [!NOTE]
+> **This is a personal fork of [Feeder](https://github.com/spacecowboy/Feeder)**, not the
+> official app. Everything below the line is upstream's README. For the official app, use the
+> upstream links further down. This fork is built and published separately.
+>
+> **What's different in this fork**
+> - **Boost-style article cards:** title and source first, then the image, then a row of
+>   quick actions (save, share, open in browser, more).
+> - **Icons throughout:** in the article long-press menu, every drawer row and every
+>   settings row. Tag folders show a folder icon with the expand arrow on the right, and
+>   feeds inside a tag are indented.
+> - **New app icon.**
+> - **Separate app id** (`com.nononsenseapps.feeder.fork`), so it installs next to the
+>   official Feeder. Move feeds over with OPML export/import.
+> - **Versioning:** `<upstream version>.<fork build>`, e.g. `2.25.0.1`.
+> - **Releases:** signed APKs on [GitHub Releases](https://github.com/sudo-panda/Feeder/releases)
+>   and in a self-hosted F-Droid repository: `https://sudo-panda.github.io/Feeder/repo`
+>   (the release notes contain the link with the signing fingerprint to add in F-Droid).
+>
+> See [FORK.md](FORK.md) for how the fork is built, signed, versioned and kept in sync with upstream.
+
+---
+
 Feeder
 =====
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Y8Y44OYQL)

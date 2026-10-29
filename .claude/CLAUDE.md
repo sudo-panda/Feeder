@@ -12,7 +12,9 @@ This is a personal fork of Feeder that ships signed APKs from `master`. Read FOR
    (the cloud environment's setup script installs the Android SDK, see FORK.md). Then push
    and wait for the **Fork build** workflow to pass. If the SDK is missing, say so instead of
    using CI as the compiler.
-4. Open a pull request against `master`. The owner reviews and merges it. Never merge
+4. If the change is user-visible, update the "What's different in this fork" list at the top
+   of README.md.
+5. Open a pull request against `master`. The owner reviews and merges it. Never merge
    pull requests yourself and never push to `master`.
 
 Keep diffs small and local so upstream merges stay easy. Prefer new private composables
