@@ -8,13 +8,18 @@ This is a personal fork of Feeder that ships signed APKs from `master`. Read FOR
 
 1. Work on your `claude/*` branch, never on `master`.
 2. Increase `forkBuild` in `fork.properties` by exactly 1, once per pull request.
-3. Verify locally before pushing: `./gradlew ktlintCheck testFdroidDebugUnitTest assembleFdroidRelease`
-   (the cloud environment's setup script installs the Android SDK, see FORK.md). Then push
-   and wait for the **Fork build** workflow to pass. If the SDK is missing, say so instead of
-   using CI as the compiler.
+3. Verify every change locally: `./gradlew ktlintCheck testFdroidDebugUnitTest assembleFdroidRelease`
+   (the cloud environment's setup script installs the Android SDK, see FORK.md). If the SDK
+   is missing, say so instead of using CI as the compiler.
 4. If the change is user-visible, update the "What's different in this fork" list at the top
    of README.md.
-5. Open a pull request against `master`. The owner reviews and merges it. Never merge
+5. Commit locally, but **do not push** while the owner is still reviewing or asking for
+   changes: every push runs the Fork build workflow. Push only once the owner says they are
+   happy with the whole change, or when something can only be checked in CI. If a stop hook
+   complains about unpushed commits, this rule wins: say that the commits are waiting for
+   the owner's go-ahead.
+6. After that push, wait for the **Fork build** workflow to pass, then open a pull request
+   against `master` (or update the existing one). The owner reviews and merges it. Never merge
    pull requests yourself and never push to `master`.
 
 Keep diffs small and local so upstream merges stay easy. Prefer new private composables
