@@ -1,8 +1,8 @@
 # Builds a pull request as a beta of the app. See FORK.md.
 #
-# Opt-in per pull request: add the "beta" label. While the label is on, every push to the
-# pull request builds a new beta, "<upstream>.<forkBuild>-beta.<n>". F-Droid offers it as
-# an update to the normal app on devices with "Unstable updates" turned on.
+# Every push to a pull request builds a new beta, "<upstream>.<forkBuild>-beta.<n>", unless
+# the pull request doesn't raise the version. F-Droid offers it as an update to the normal
+# app on devices with "Unstable updates" turned on. Merging to master makes the release.
 #
 # Security notes:
 # - This workflow never sees a secret. It only builds an unsigned APK and asks
@@ -14,7 +14,7 @@ name: Fork beta
 
 on:
   pull_request:
-    types: [labeled, synchronize, reopened]
+    types: [opened, synchronize, reopened]
 
 permissions: {}
 
@@ -24,28 +24,18 @@ concurrency:
 
 jobs:
   build:
-    if: >-
-      contains(github.event.pull_request.labels.*.name, 'beta') &&
-      github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
       contents: read
+    outputs:
+      number: ${{ steps.number.outputs.number }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - name: setup JDK
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
-        with:
-          java-version: "25"
-          distribution: "temurin"
-
-      # Also validates the checksum of the Gradle wrapper jar
-      - name: gradle setup
-        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: next beta number
         id: number
@@ -53,10 +43,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: echo "number=$(ci/fork-beta-number)" >> "$GITHUB_OUTPUT"
 
+      - name: setup JDK
+        if: steps.number.outputs.number != ''
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          java-version: "25"
+          distribution: "temurin"
+
+      # Also validates the checksum of the Gradle wrapper jar
+      - name: gradle setup
+        if: steps.number.outputs.number != ''
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
       - name: build beta apk
+        if: steps.number.outputs.number != ''
         run: ./gradlew assembleFdroidRelease -PforkBeta=${{ steps.number.outputs.number }}
 
       - name: save unsigned apk
+        if: steps.number.outputs.number != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unsigned-beta-apk
@@ -66,11 +70,13 @@ jobs:
 
   publish:
     needs: build
+    if: needs.build.outputs.number != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       # To start fork_fdroid.yml on master
       actions: write
+      contents: read
     steps:
       - name: sign and publish on master
         env:
@@ -79,6 +85,11 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: >-
-          gh workflow run fork_fdroid.yml --repo "$REPO" --ref master
-          -f beta_run_id="$RUN_ID" -f pr_number="$PR_NUMBER" -f head_sha="$HEAD_SHA"
+        run: |
+          # The pull request that adds fork_fdroid.yml can't use it before it's merged
+          if ! gh api "repos/$REPO/contents/.github/workflows/fork_fdroid.yml?ref=master" > /dev/null 2>&1; then
+            echo "::notice::fork_fdroid.yml isn't on master yet, so no beta for this pull request"
+            exit 0
+          fi
+          gh workflow run fork_fdroid.yml --repo "$REPO" --ref master \
+            -f beta_run_id="$RUN_ID" -f pr_number="$PR_NUMBER" -f head_sha="$HEAD_SHA"

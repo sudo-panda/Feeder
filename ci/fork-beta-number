@@ -1,6 +1,8 @@
 #!/bin/bash -eu
 # Prints the next beta number of the release this branch will become, based on the
-# existing v<upstream>.<forkBuild>-beta.<n> pre-releases. See FORK.md.
+# existing v<upstream>.<forkBuild>-beta.<n> pre-releases. Prints nothing if that release
+# already exists: the branch doesn't raise the version, so a beta wouldn't be newer than
+# the installed release. See FORK.md.
 #
 # Usage: ci/fork-beta-number
 # Env:   GH_TOKEN
@@ -10,6 +12,11 @@ FORK_BUILD="$(sed -n 's/^forkBuild=\([0-9]*\)$/\1/p' fork.properties)"
 if [ -z "$UPSTREAM" ] || [ -z "$FORK_BUILD" ]; then
   echo "::error::Could not read the version from app/build.gradle.kts and fork.properties" >&2
   exit 1
+fi
+
+if gh release view "v$UPSTREAM.$FORK_BUILD" > /dev/null 2>&1; then
+  echo "v$UPSTREAM.$FORK_BUILD is already released, so no beta for this branch" >&2
+  exit 0
 fi
 
 PREFIX="v$UPSTREAM.$FORK_BUILD-beta."

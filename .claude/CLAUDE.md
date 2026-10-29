@@ -19,9 +19,9 @@ This is a personal fork of Feeder that ships signed APKs from `master`. Read FOR
    complains about unpushed commits, this rule wins: say that the commits are waiting for
    the owner's go-ahead.
 6. After that push, wait for the **Fork build** workflow to pass, then open a pull request
-   against `master` (or update the existing one). The owner can add the `beta` label to get
-   it as a beta of the app (F-Droid "Unstable updates") before merging. The owner reviews
-   and merges it. Never merge pull requests yourself and never push to `master`.
+   against `master` (or update the existing one). Every push to it publishes a beta of the
+   app (F-Droid "Unstable updates"), which is another reason to push only when the owner
+   approves. The owner reviews and merges it. Never merge pull requests yourself and never push to `master`.
 
 Keep diffs small and local so upstream merges stay easy. Prefer new private composables
 and appended code over rewriting upstream code. Mark fork-specific code with a
