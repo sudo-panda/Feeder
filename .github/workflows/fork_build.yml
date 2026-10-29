@@ -1,20 +1,22 @@
 # Builds this fork. See FORK.md.
 #
 # - Any branch: lint + unit tests + release build (no secrets involved).
-# - master: release build, then a separate job signs the APK and publishes a
-#   GitHub release plus an F-Droid repo on GitHub Pages, but only if the version
-#   (see fork.properties) is new.
+# - master: release build, then, only if the version (see fork.properties) is new:
+#   sign the APK, build the F-Droid repo, sign its index, publish the GitHub release,
+#   deploy the F-Droid repo to GitHub Pages.
 #
 # Security notes:
 # - The signing password only exists in the "release" environment, which is
-#   restricted to master. Gradle (and all third-party build code) never runs
-#   in a job that can see it.
-# - Third-party actions are pinned to full commit SHAs.
+#   restricted to master. Jobs that can read it only run the ci/ scripts with the
+#   JDK, Android build tools and gh. Gradle, fdroidserver and every other third-party
+#   tool run in jobs without secrets.
+# - Third-party actions are pinned to full commit SHAs, Python packages to hashes.
 name: Fork build
 
 on:
   push:
-    branches: ["**"]
+    # fdroid-beta only holds the beta F-Droid repository, see fork_beta.yml
+    branches: ["**", "!fdroid-beta"]
   workflow_dispatch:
 
 permissions: {}
@@ -61,7 +63,7 @@ jobs:
           if-no-files-found: error
           path: app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk
 
-  release:
+  release-sign:
     needs: build
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
@@ -72,9 +74,14 @@ jobs:
       group: fork-release
       cancel-in-progress: false
     permissions:
+      # To commit the signing key on the very first release
       contents: write
     outputs:
-      published: ${{ steps.publish.outputs.published }}
+      publish: ${{ steps.prepare.outputs.publish }}
+      version: ${{ steps.prepare.outputs.version }}
+      repo_url: ${{ steps.prepare.outputs.repo_url }}
+      cert_sha256: ${{ steps.sign.outputs.cert_sha256 }}
+      cert_hex: ${{ steps.sign.outputs.cert_hex }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -84,27 +91,124 @@ jobs:
         with:
           name: unsigned-apk
 
-      - name: install fdroidserver
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq --no-install-recommends fdroidserver
-
-      - name: sign and publish
-        id: publish
+      - name: prepare
+        id: prepare
         env:
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           GH_TOKEN: ${{ github.token }}
-        run: ci/fork-release app-fdroid-release-unsigned.apk
+        run: ci/fork-release-prepare app-fdroid-release-unsigned.apk
+
+      - name: sign apk
+        id: sign
+        if: steps.prepare.outputs.publish == 'true'
+        env:
+          KEY_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          mkdir signed
+          ci/fork-sign-apk app-fdroid-release-unsigned.apk signing/release.p12 \
+            signed/feeder-${{ steps.prepare.outputs.version }}.apk
+          # The publish job signs the F-Droid index with it (encrypted, already public in git)
+          cp signing/release.p12 signed/
+
+      - name: upload signed apk
+        if: steps.prepare.outputs.publish == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: signed
+          retention-days: 1
+          if-no-files-found: error
+          path: signed/
+
+  release-index:
+    needs: release-sign
+    if: needs.release-sign.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: download signed apk
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: signed
+          path: signed
+
+      - name: setup python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: install fdroidserver
+        run: pip install --require-hashes -r ci/fdroidserver-requirements.txt
+
+      - name: build F-Droid repo (unsigned index)
+        run: >-
+          ci/fork-fdroid-index signed/feeder-${{ needs.release-sign.outputs.version }}.apk site
+          "${{ needs.release-sign.outputs.repo_url }}" "Feeder fork"
+          "${{ needs.release-sign.outputs.cert_hex }}"
+
+      - name: upload F-Droid repo
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-repo
+          retention-days: 1
+          if-no-files-found: error
+          path: site/
+
+  release-publish:
+    needs: [release-sign, release-index]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    concurrency:
+      group: fork-release-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: download signed apk
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: signed
+          path: signed
+
+      - name: download F-Droid repo
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unsigned-repo
+          path: site
+
+      - name: sign F-Droid index
+        env:
+          KEY_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: ci/fork-sign-index site/repo signed/release.p12
+
+      - name: publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          ci/fork-release-publish signed/feeder-${{ needs.release-sign.outputs.version }}.apk
+          "${{ needs.release-sign.outputs.version }}"
+          "${{ needs.release-sign.outputs.cert_sha256 }}"
+          "${{ needs.release-sign.outputs.repo_url }}"
 
       - name: save F-Droid repo
-        if: steps.publish.outputs.published == 'true'
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site
 
   pages:
-    needs: release
-    if: needs.release.outputs.published == 'true'
+    needs: release-publish
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

@@ -1,0 +1,55 @@
+#!/bin/bash -eu
+# First step of a production release on master. See FORK.md.
+# Decides whether this version is new (publish=true/false) and creates the signing key
+# on the very first release. Writes publish, version and repo_url to $GITHUB_OUTPUT.
+#
+# Usage: ci/fork-release-prepare <unsigned.apk>
+# Env:   SIGNING_PASSWORD, GH_TOKEN, ANDROID_HOME, GITHUB_REPOSITORY, GITHUB_OUTPUT
+
+UNSIGNED_APK="$1"
+KEYSTORE="signing/release.p12"
+
+if [ "${#SIGNING_PASSWORD}" -lt 32 ]; then
+  echo "::error::SIGNING_PASSWORD secret is missing or shorter than 32 characters. See FORK.md."
+  exit 1
+fi
+
+BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+VERSION="$("$BUILD_TOOLS/aapt2" dump badging "$UNSIGNED_APK" | sed -n "s/.* versionName='\([^']*\)'.*/\1/p")"
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "::error::Unexpected version name '$VERSION'"
+  exit 1
+fi
+
+if gh release view "v$VERSION" > /dev/null 2>&1; then
+  echo "::notice::v$VERSION is already released, nothing to publish. Bump forkBuild in fork.properties for a new release."
+  echo "publish=false" >> "$GITHUB_OUTPUT"
+  exit 0
+fi
+
+if [ ! -f "$KEYSTORE" ]; then
+  # Only ever create a key for the very first release. A new key means the
+  # installed app can no longer be updated, so never do that silently.
+  if [ -n "$(gh release list --limit 1 --json tagName --jq '.[].tagName')" ]; then
+    echo "::error::$KEYSTORE is missing but releases exist. Restore it from git history; do not create a new key."
+    exit 1
+  fi
+  echo "Creating signing key $KEYSTORE"
+  mkdir -p "$(dirname "$KEYSTORE")"
+  keytool -genkeypair -noprompt \
+    -keystore "$KEYSTORE" -storetype PKCS12 -storepass:env SIGNING_PASSWORD \
+    -alias release -keyalg RSA -keysize 4096 -validity 36500 \
+    -dname "CN=Feeder fork"
+  git config user.name "github-actions[bot]"
+  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+  git add "$KEYSTORE"
+  git commit -m "chore: added release signing key (password protected)"
+  git push origin HEAD:master
+fi
+
+OWNER="${GITHUB_REPOSITORY%%/*}"
+{
+  echo "publish=true"
+  echo "version=$VERSION"
+  echo "repo_url=https://${OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/repo"
+} >> "$GITHUB_OUTPUT"

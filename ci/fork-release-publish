@@ -1,0 +1,22 @@
+#!/bin/bash -eu
+# Last step of a production release: publishes the signed APK as GitHub release
+# v<version>. The F-Droid repo is deployed to GitHub Pages by the workflow. See FORK.md.
+#
+# Usage: ci/fork-release-publish <signed.apk> <version> <cert sha256> <F-Droid repo url>
+# Env:   GH_TOKEN, GITHUB_SHA
+
+SIGNED_APK="$1"
+VERSION="$2"
+CERT_SHA256="$3"
+REPO_URL="$4"
+APK_SHA256="$(sha256sum "$SIGNED_APK" | cut -d ' ' -f 1)"
+
+gh release create "v$VERSION" "$SIGNED_APK" \
+  --target "$GITHUB_SHA" \
+  --title "Feeder $VERSION" \
+  --generate-notes \
+  --notes "Signing certificate SHA-256: \`$CERT_SHA256\`
+APK SHA-256: \`$APK_SHA256\`
+F-Droid repository: $REPO_URL?fingerprint=$CERT_SHA256
+"
+echo "::notice::Published v$VERSION (certificate SHA-256 $CERT_SHA256)"

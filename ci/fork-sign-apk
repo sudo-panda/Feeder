@@ -1,0 +1,26 @@
+#!/bin/bash -eu
+# Signs an APK with the "release" key of a keystore and verifies it.
+# Writes the certificate's SHA-256 (cert_sha256) and DER as hex (cert_hex, public,
+# needed for the F-Droid index) to $GITHUB_OUTPUT. See FORK.md.
+#
+# Usage: ci/fork-sign-apk <unsigned.apk> <keystore> <signed.apk>
+# Env:   KEY_PASSWORD, ANDROID_HOME, GITHUB_OUTPUT
+
+BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+
+"$BUILD_TOOLS/apksigner" sign \
+  --ks "$2" --ks-pass env:KEY_PASSWORD --ks-key-alias release \
+  --out "$3" "$1"
+
+VERIFY="$("$BUILD_TOOLS/apksigner" verify --print-certs "$3")"
+CERT_SHA256="$(sed -n 's/.*certificate SHA-256 digest: //p' <<< "$VERIFY" | head -n 1)"
+if ! [[ "$CERT_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+  echo "$VERIFY"
+  echo "::error::Could not verify the signed APK"
+  exit 1
+fi
+CERT_HEX="$(keytool -exportcert -keystore "$2" -storepass:env KEY_PASSWORD -alias release | od -An -v -tx1 | tr -d ' \n')"
+
+echo "cert_sha256=$CERT_SHA256" >> "$GITHUB_OUTPUT"
+echo "cert_hex=$CERT_HEX" >> "$GITHUB_OUTPUT"
+echo "Signed $3 (certificate SHA-256 $CERT_SHA256)"

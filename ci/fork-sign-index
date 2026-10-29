@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+# Signs the index of an F-Droid repository built by ci/fork-fdroid-index, using only the
+# JDK's jar and jarsigner. F-Droid verifies entry.jar and index-v1.jar against the
+# repository's fingerprint. See FORK.md.
+#
+# Usage: ci/fork-sign-index <repo dir> <keystore>
+# Env:   KEY_PASSWORD
+
+KEYSTORE="$(realpath "$2")"
+cd "$1"
+for name in entry index-v1; do
+  rm -f "$name.jar"
+  jar cf "$name.jar" "$name.json"
+  jarsigner -keystore "$KEYSTORE" -storepass:env KEY_PASSWORD \
+    -sigalg SHA256withRSA -digestalg SHA-256 "$name.jar" release
+  # Not -strict: that fails on self-signed certificates, which all Android signing keys are
+  jarsigner -verify "$name.jar" | grep -q "^jar verified\.$"
+done

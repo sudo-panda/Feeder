@@ -1,0 +1,40 @@
+#!/bin/bash -eu
+# First step of a beta release. See FORK.md.
+# Gets the beta key from the fdroid-beta branch (or creates it for the very first beta)
+# and checks the version. Writes version and repo_url to $GITHUB_OUTPUT.
+#
+# Usage: ci/fork-beta-prepare <unsigned.apk> <keystore to write>
+# Env:   BETA_SIGNING_PASSWORD, ANDROID_HOME, GITHUB_REPOSITORY, GITHUB_OUTPUT
+
+UNSIGNED_APK="$1"
+KEYSTORE="$2"
+BRANCH="fdroid-beta"
+
+if [ "${#BETA_SIGNING_PASSWORD}" -lt 32 ]; then
+  echo "::error::BETA_SIGNING_PASSWORD secret is missing or shorter than 32 characters. See FORK.md."
+  exit 1
+fi
+
+BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+VERSION="$("$BUILD_TOOLS/aapt2" dump badging "$UNSIGNED_APK" | sed -n "s/.* versionName='\([^']*\)'.*/\1/p")"
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+  echo "::error::Unexpected beta version name '$VERSION'"
+  exit 1
+fi
+
+mkdir -p "$(dirname "$KEYSTORE")"
+if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+  git fetch --quiet origin "$BRANCH"
+  git show "FETCH_HEAD:signing/beta.p12" > "$KEYSTORE"
+else
+  echo "Creating beta signing key"
+  keytool -genkeypair -noprompt \
+    -keystore "$KEYSTORE" -storetype PKCS12 -storepass:env BETA_SIGNING_PASSWORD \
+    -alias release -keyalg RSA -keysize 4096 -validity 36500 \
+    -dname "CN=Feeder fork beta"
+fi
+
+{
+  echo "version=$VERSION"
+  echo "repo_url=https://raw.githubusercontent.com/$GITHUB_REPOSITORY/$BRANCH/repo"
+} >> "$GITHUB_OUTPUT"
