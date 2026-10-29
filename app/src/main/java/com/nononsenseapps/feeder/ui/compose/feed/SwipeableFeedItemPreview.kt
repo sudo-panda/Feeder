@@ -408,7 +408,9 @@ fun SwipeableFeedItemPreview(
             Box(
                 modifier =
                     Modifier
-                        .matchParentSize(),
+                        .matchParentSize()
+                        // Fork: keep the card's action buttons tappable, the swipe area covered them
+                        .padding(bottom = if (feedItemStyle == FeedItemStyle.CARD) FeedItemCardActionsHeight else 0.dp),
             ) {
                 Box(
                     modifier =

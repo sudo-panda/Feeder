@@ -260,6 +260,8 @@ private fun FeedItemCardMetaLine(
 }
 
 // Fork: Boost-style quick actions at the bottom of each card
+internal val FeedItemCardActionsHeight = 44.dp
+
 @Composable
 private fun FeedItemCardActions(
     item: FeedListItem,
@@ -332,7 +334,7 @@ private fun CardActionButton(
     tint: Color,
     onClick: () -> Unit,
 ) {
-    IconButton(onClick = onClick, modifier = Modifier.size(44.dp)) {
+    IconButton(onClick = onClick, modifier = Modifier.size(FeedItemCardActionsHeight)) {
         Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(20.dp))
     }
 }
