@@ -354,6 +354,8 @@ val forkBuild =
         .trim()
         .toInt()
         .also { require(it in 0..999) { "forkBuild must be 0-999 to fit in versionCode" } }
+val upstreamVersionName = checkNotNull(android.defaultConfig.versionName)
+val upstreamVersionCode = checkNotNull(android.defaultConfig.versionCode)
 
 androidComponents {
     onVariants { variant ->
@@ -364,8 +366,8 @@ androidComponents {
             variant.applicationId.set("com.nononsenseapps.feeder.fork")
         }
         variant.outputs.forEach { output ->
-            output.versionName.set(output.versionName.map { "$it.$forkBuild" })
-            output.versionCode.set(output.versionCode.map { it * 1000 + forkBuild })
+            output.versionName.set("$upstreamVersionName.$forkBuild")
+            output.versionCode.set(upstreamVersionCode * 1000 + forkBuild)
         }
     }
 }
