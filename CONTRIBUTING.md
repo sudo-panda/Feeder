@@ -28,7 +28,7 @@ No API keys or special local configuration are required to build and run the app
 ## Architecture overview
 
 Feeder uses **MVVM** with a unidirectional data flow. A more detailed breakdown is available in
-[`AGENTS.md`](AGENTS.md), which also serves as the reference for AI coding agents.
+[`AGENTS.md`](.claude/AGENTS.md), which also serves as the reference for AI coding agents.
 
 The short version:
 
