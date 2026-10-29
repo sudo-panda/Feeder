@@ -346,10 +346,12 @@ class RoomSchemaArgProvider(
 // Fork: version is "<upstream versionName>.<forkBuild>" and the app id differs from
 // upstream so both can be installed side by side. See FORK.md.
 val forkBuild =
-    java.util
-        .Properties()
-        .apply { rootProject.file("fork.properties").reader().use { load(it) } }
-        .getProperty("forkBuild")
+    rootProject
+        .file("fork.properties")
+        .readLines()
+        .first { it.startsWith("forkBuild=") }
+        .substringAfter("=")
+        .trim()
         .toInt()
         .also { require(it in 0..999) { "forkBuild must be 0-999 to fit in versionCode" } }
 
