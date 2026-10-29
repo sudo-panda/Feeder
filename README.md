@@ -18,6 +18,8 @@
 > - **Boost-style colours:** neutral grey backgrounds and cards with one accent colour
 >   (green by default). *Settings → Accent color* replaces *Dynamic colors*; pick
 >   *Wallpaper* there to keep Android 12+ dynamic colours.
+> - **Boost-style pull to refresh:** the circle only follows your finger; loading shows as a
+>   thin accent-coloured bar under the top bar.
 > - **Settings → Data:** importing and exporting feeds (OPML) and saved articles moved here
 >   from the feed screen's ⋮ menu.
 > - **Separate app id** (`com.nononsenseapps.feeder.fork`), so it installs next to the
