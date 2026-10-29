@@ -14,8 +14,12 @@
 >   official Feeder. Move feeds over with OPML export/import.
 > - **Versioning:** `<upstream version>.<fork build>`, e.g. `2.25.0.1`.
 > - **Releases:** signed APKs on [GitHub Releases](https://github.com/sudo-panda/Feeder/releases)
->   and in a self-hosted F-Droid repository: `https://sudo-panda.github.io/Feeder/repo`
->   (the release notes contain the link with the signing fingerprint to add in F-Droid).
+>   and in this fork's own F-Droid repository (below).
+>
+> **Get the fork** from its F-Droid repository. Open this link on your phone and tap the
+> repository link (or scan the QR code) to add it to F-Droid with its signing fingerprint:
+>
+> <a href="https://sudo-panda.github.io/Feeder/repo/"><img src="https://f-droid.org/badge/get-it-on.png" alt="Get the fork from its F-Droid repository" height="80"/></a>
 >
 > See [FORK.md](FORK.md) for how the fork is built, signed, versioned and kept in sync with upstream.
 

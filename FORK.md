@@ -40,7 +40,9 @@ A push to `master` whose version already has a release publishes nothing
 4. Merge the first pull request. The first release run creates the signing key
    (`signing/release.p12`, encrypted with `SIGNING_PASSWORD`), commits it, and
    publishes `v2.25.0.1`.
-5. In the F-Droid app: *Settings → Repositories → +*, and enter
+5. On the phone, open `https://sudo-panda.github.io/Feeder/repo/` (the F-Droid badge in the
+   README) and tap the repository link to add it to F-Droid. Or, in the F-Droid app,
+   *Settings → Repositories → +*, and enter
    `https://sudo-panda.github.io/Feeder/repo?fingerprint=<fingerprint>`, where
    `<fingerprint>` is the "Signing certificate SHA-256" from the release notes. F-Droid
    refuses the repo if the fingerprint doesn't match. Then install "Feeder" from it.
