@@ -702,19 +702,19 @@ fun SettingsList(
                         false -> stringResource(id = R.string.battery_optimization_enabled)
                     },
                 title = stringResource(id = R.string.battery_optimization),
-                icon = { Icon(Icons.Outlined.BatterySaver, contentDescription = null) },
                 {
                     onStartActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                 },
+                icon = { Icon(Icons.Outlined.BatterySaver, contentDescription = null) },
             )
 
             ExternalSetting(
                 currentValue = "",
                 title = stringResource(id = R.string.device_sync),
-                icon = { Icon(Icons.Outlined.Devices, contentDescription = null) },
                 {
                     onOpenSyncSettings()
                 },
+                icon = { Icon(Icons.Outlined.Devices, contentDescription = null) },
             )
         }
 
