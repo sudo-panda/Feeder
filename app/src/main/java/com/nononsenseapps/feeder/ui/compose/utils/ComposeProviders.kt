@@ -36,7 +36,7 @@ fun DIAwareComponentActivity.withAllProviders(content: @Composable () -> Unit) {
                         FeederTheme(
                             currentTheme = currentTheme,
                             darkThemePreference = darkThemePreference,
-                            dynamicColors = accentColor == AccentColor.WALLPAPER,
+                            dynamicColors = accentColor == AccentColor.Wallpaper,
                             accentColor = accentColor,
                         ) {
                             WithFeederTextToolbar(content)

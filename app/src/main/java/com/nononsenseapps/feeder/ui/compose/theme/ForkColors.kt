@@ -6,39 +6,28 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
+import androidx.core.graphics.ColorUtils
 import com.nononsenseapps.feeder.archmodel.AccentColor
 
 // Fork: Boost-style colours. Neutral grey surfaces with one accent colour.
 
-private fun AccentColor.light(): Color =
-    when (this) {
-        AccentColor.BLUE -> Color(0xFF1976D2)
-        AccentColor.INDIGO -> Color(0xFF3949AB)
-        AccentColor.PURPLE -> Color(0xFF8E24AA)
-        AccentColor.PINK -> Color(0xFFD81B60)
-        AccentColor.RED -> Color(0xFFD32F2F)
-        AccentColor.ORANGE -> Color(0xFFEF6C00)
-        AccentColor.TEAL -> Color(0xFF00897B)
-        AccentColor.GREEN, AccentColor.WALLPAPER -> Color(0xFF2F8A63)
-    }
+// Light theme: dark enough to read on white
+fun AccentColor.Rgb.light(): Color = withLightness { minOf(it, 0.5f) }
 
-// Lighter shades so the accent stays readable on dark surfaces
-private fun AccentColor.dark(): Color =
-    when (this) {
-        AccentColor.BLUE -> Color(0xFF64B5F6)
-        AccentColor.INDIGO -> Color(0xFF7986CB)
-        AccentColor.PURPLE -> Color(0xFFCE93D8)
-        AccentColor.PINK -> Color(0xFFF48FB1)
-        AccentColor.RED -> Color(0xFFEF9A9A)
-        AccentColor.ORANGE -> Color(0xFFFFB74D)
-        AccentColor.TEAL -> Color(0xFF4DB6AC)
-        AccentColor.GREEN, AccentColor.WALLPAPER -> Color(0xFF6FCF9F)
-    }
+// Dark themes: a lighter shade so the accent stays readable on dark surfaces
+fun AccentColor.Rgb.dark(): Color = withLightness { maxOf(it, 0.68f) }
+
+private fun AccentColor.Rgb.withLightness(lightness: (Float) -> Float): Color {
+    val hsl = FloatArray(3)
+    ColorUtils.colorToHSL(rgb or 0xFF000000.toInt(), hsl)
+    hsl[2] = lightness(hsl[2])
+    return Color(ColorUtils.HSLToColor(hsl))
+}
 
 private fun onAccent(accent: Color): Color = if (accent.luminance() > 0.4f) Color(0xFF111111) else Color.White
 
 fun forkColorScheme(
-    accentColor: AccentColor,
+    accentColor: AccentColor.Rgb,
     dark: Boolean,
     black: Boolean,
 ): ColorScheme {

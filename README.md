@@ -16,8 +16,9 @@
 > - **More feed icons:** feeds that declare no icon fall back to their site's `favicon.ico`.
 > - **New app icon:** an F whose arms bend into RSS arcs, white on forest green.
 > - **Boost-style colours:** neutral grey backgrounds and cards with one accent colour
->   (green by default). *Settings → Accent color* replaces *Dynamic colors*; pick
->   *Wallpaper* there to keep Android 12+ dynamic colours.
+>   (green by default). *Settings → Accent color* replaces *Dynamic colors*: preset colour
+>   tiles, a custom colour (hue, shade or hex), or *Wallpaper* to keep Android 12+ dynamic
+>   colours.
 > - **Boost-style pull to refresh:** the circle only follows your finger; loading shows as a
 >   thin accent-coloured bar under the top bar.
 > - **Settings → Data:** importing and exporting feeds (OPML) and saved articles moved here

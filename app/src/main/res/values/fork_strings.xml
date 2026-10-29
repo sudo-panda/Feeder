@@ -5,12 +5,8 @@
   <string name="clear_search">Clear search</string>
   <string name="accent_color">Accent color</string>
   <string name="accent_wallpaper">Wallpaper</string>
-  <string name="accent_blue">Blue</string>
-  <string name="accent_indigo">Indigo</string>
-  <string name="accent_purple">Purple</string>
-  <string name="accent_pink">Pink</string>
-  <string name="accent_red">Red</string>
-  <string name="accent_orange">Orange</string>
-  <string name="accent_green">Green</string>
-  <string name="accent_teal">Teal</string>
+  <string name="accent_custom">Custom color</string>
+  <string name="accent_hue">Hue</string>
+  <string name="accent_shade">Shade</string>
+  <string name="accent_hex">Hex</string>
 </resources>

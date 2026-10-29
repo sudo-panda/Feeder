@@ -452,7 +452,7 @@ data class SettingsViewState(
     val batteryOptimizationIgnored: Boolean = false,
     val swipeAsRead: SwipeAsRead = SwipeAsRead.ONLY_FROM_END,
     val useDetectLanguage: Boolean = true,
-    val accentColor: AccentColor = AccentColor.GREEN,
+    val accentColor: AccentColor = AccentColor.DEFAULT,
     val feedsSettings: List<UIFeedSettings> = emptyList(),
     val isMarkAsReadOnScroll: Boolean = false,
     val maxLines: Int = 2,

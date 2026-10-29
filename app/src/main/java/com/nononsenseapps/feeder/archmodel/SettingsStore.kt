@@ -308,7 +308,7 @@ class SettingsStore(
 
     fun setAccentColor(value: AccentColor) {
         _accentColor.value = value
-        sp.edit().putString(PREF_FORK_ACCENT_COLOR, value.name.lowercase()).apply()
+        sp.edit().putString(PREF_FORK_ACCENT_COLOR, value.toPrefString()).apply()
     }
 
     private val _textScale =

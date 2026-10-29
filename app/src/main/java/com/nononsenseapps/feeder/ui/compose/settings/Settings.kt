@@ -1,7 +1,6 @@
 package com.nononsenseapps.feeder.ui.compose.settings
 
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
@@ -41,7 +40,6 @@ import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.BatterySaver
 import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Devices
@@ -246,8 +244,8 @@ fun SettingsScreen(
             onUseInAppAudioPlayerChange = settingsViewModel::setUseInAppAudioPlayer,
             batteryOptimizationIgnoredValue = viewState.batteryOptimizationIgnored,
             onOpenSyncSettings = onNavigateToSyncScreen,
-            currentAccentColor = viewState.accentColor.asAccentColorOption(),
-            onAccentColorChange = { value -> settingsViewModel.setAccentColor(value.accentColor) },
+            accentColor = viewState.accentColor,
+            onAccentColorChange = settingsViewModel::setAccentColor,
             onBlockListAdd = settingsViewModel::addToBlockList,
             onBlockListRemove = settingsViewModel::removeFromBlockList,
             feedsSettings = ImmutableHolder(viewState.feedsSettings),
@@ -352,7 +350,7 @@ private fun SettingsScreenPreview() {
             onUseInAppAudioPlayerChange = {},
             batteryOptimizationIgnoredValue = false,
             onOpenSyncSettings = {},
-            currentAccentColor = AccentColor.GREEN.asAccentColorOption(),
+            accentColor = AccentColor.DEFAULT,
             onAccentColorChange = {},
             onBlockListAdd = {},
             onBlockListRemove = {},
@@ -445,8 +443,8 @@ fun SettingsList(
     onUseInAppAudioPlayerChange: (Boolean) -> Unit,
     batteryOptimizationIgnoredValue: Boolean,
     onOpenSyncSettings: () -> Unit,
-    currentAccentColor: AccentColorOption,
-    onAccentColorChange: (AccentColorOption) -> Unit,
+    accentColor: AccentColor,
+    onAccentColorChange: (AccentColor) -> Unit,
     onBlockListAdd: (String) -> Unit,
     onBlockListRemove: (String) -> Unit,
     feedsSettings: ImmutableHolder<List<UIFeedSettings>>,
@@ -494,11 +492,6 @@ fun SettingsList(
 ) {
     val scrollState = rememberScrollState()
     val dimens = LocalDimens.current
-    val isAndroidSAndAbove =
-        remember {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-        }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -526,17 +519,9 @@ fun SettingsList(
         )
 
         // Fork: accent colour instead of the dynamic colors switch
-        MenuSetting(
-            title = stringResource(id = R.string.accent_color),
-            icon = { Icon(Icons.Outlined.ColorLens, contentDescription = null) },
-            currentValue = currentAccentColor,
-            values =
-                ImmutableHolder(
-                    AccentColor.entries
-                        .filter { it != AccentColor.WALLPAPER || isAndroidSAndAbove }
-                        .map { it.asAccentColorOption() },
-                ),
-            onSelection = onAccentColorChange,
+        AccentColorSetting(
+            accentColor = accentColor,
+            onAccentColorChange = onAccentColorChange,
             modifier =
                 Modifier
                     .width(dimens.maxContentWidth),
@@ -1881,20 +1866,4 @@ private fun DownloadedModelsSection(
             }
         }
     }
-}
-
-// Fork: see AccentColor
-@Composable
-fun AccentColor.asAccentColorOption() =
-    AccentColorOption(
-        accentColor = this,
-        name = stringResource(id = stringId),
-    )
-
-@Immutable
-data class AccentColorOption(
-    val accentColor: AccentColor,
-    val name: String,
-) {
-    override fun toString() = name
 }

@@ -284,7 +284,7 @@ private fun ThemeOptions.getColorScheme(
             }
 
             // Fork: Boost-style colours
-            accentColor != null && this != ThemeOptions.E_INK -> {
+            accentColor is AccentColor.Rgb && this != ThemeOptions.E_INK -> {
                 forkColorScheme(accentColor, dark, black = darkThemePreference == DarkThemePreferences.BLACK)
             }
 
