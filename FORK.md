@@ -21,10 +21,8 @@ Version = `<upstream version>.<forkBuild>`, with `forkBuild` taken from
 new upstream release does not, so `2.25.0.2` becomes `2.25.1.2`.
 The version code is `<upstream versionCode> * 1000 + forkBuild`, so it always increases.
 
-The app id is the official F-Droid one, `com.nononsenseapps.feeder`, so the fork takes the
-place of Feeder. Android only updates an app with an APK signed by the same key, so the first
-install needs the official app uninstalled (see setup). After that, updates work normally,
-and the version code (`upstream * 1000 + forkBuild`) is always above the official one.
+The release app id is `com.nononsenseapps.feeder.fork`, so it can be installed next to
+the official Feeder. Move feeds over with OPML export/import.
 
 A push to `master` whose version already has a release publishes nothing
 (for example a docs-only change).
@@ -42,18 +40,14 @@ A push to `master` whose version already has a release publishes nothing
 4. Merge the first pull request. The first release run creates the signing key
    (`signing/release.p12`, encrypted with `SIGNING_PASSWORD`), commits it, and
    publishes `v2.25.0.1`.
-5. Move from the official Feeder (this deletes its data, so export first):
-   in Feeder's ⋮ menu, use *Export feeds to OPML* (and *Export saved articles* if you use
-   them), then uninstall Feeder.
-6. In the F-Droid app: *Settings → Repositories → +*, and enter
+5. In the F-Droid app: *Settings → Repositories → +*, and enter
    `https://sudo-panda.github.io/Feeder/repo?fingerprint=<fingerprint>`, where
    `<fingerprint>` is the "Signing certificate SHA-256" from the release notes. F-Droid
-   refuses the repo if the fingerprint doesn't match. Then install "Feeder" from it and use
-   *Import feeds from OPML* (and *Import saved articles*) from the ⋮ menu.
-7. After the first release, add **Settings → Rules → Rulesets → New branch ruleset**
+   refuses the repo if the fingerprint doesn't match. Then install "Feeder" from it.
+6. After the first release, add **Settings → Rules → Rulesets → New branch ruleset**
    targeting `master`: *Restrict deletions*, *Block force pushes*, *Require a pull
    request before merging*, with no bypass list.
-8. Make sure two-factor authentication is on for your GitHub account.
+7. Make sure two-factor authentication is on for your GitHub account.
 
 ## Cloud environment for Claude (local builds)
 

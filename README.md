@@ -10,8 +10,8 @@
 >   settings row. Tag folders show a folder icon with the expand arrow on the right, and
 >   feeds inside a tag are indented.
 > - **New app icon.**
-> - **Same app id as the official F-Droid build** (`com.nononsenseapps.feeder`), but signed
->   with a different key: uninstall the official app once before installing this one.
+> - **Separate app id** (`com.nononsenseapps.feeder.fork`), so it installs next to the
+>   official Feeder. Move feeds over with OPML export/import.
 > - **Versioning:** `<upstream version>.<fork build>`, e.g. `2.25.0.1`.
 > - **Releases:** signed APKs on [GitHub Releases](https://github.com/sudo-panda/Feeder/releases)
 >   and in a self-hosted F-Droid repository: `https://sudo-panda.github.io/Feeder/repo`
