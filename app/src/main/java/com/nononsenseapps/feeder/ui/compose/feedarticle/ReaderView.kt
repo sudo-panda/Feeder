@@ -87,6 +87,7 @@ fun ReaderView(
     articleScrollState: ScrollState = rememberScrollState(),
     onShare: () -> Unit = {},
     onOpenInBrowser: () -> Unit = {},
+    feedImageUrl: String? = null,
     articleBody: @Composable (indexOffset: Int) -> Unit,
 ) {
     val dimens = LocalDimens.current
@@ -146,6 +147,7 @@ fun ReaderView(
                     authorDate = authorDate,
                     readTimeSecs = readTimeSecs,
                     onFeedTitleClick = onFeedTitleClick,
+                    feedImageUrl = feedImageUrl,
                     modifier =
                         Modifier
                             .padding(top = 8.dp)

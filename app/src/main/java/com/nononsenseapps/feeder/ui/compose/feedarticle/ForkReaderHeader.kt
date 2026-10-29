@@ -25,11 +25,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -41,6 +47,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.size.Precision
+import coil3.size.Scale
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
 import com.nononsenseapps.feeder.ui.compose.theme.LocalReaderAppearance
@@ -81,6 +91,7 @@ fun ForkReaderHeader(
     readTimeSecs: Int,
     onFeedTitleClick: () -> Unit,
     modifier: Modifier = Modifier,
+    feedImageUrl: String? = null,
 ) {
     val goToFeedLabel = stringResource(R.string.go_to_feed, feedTitle)
     val readTime =
@@ -108,20 +119,7 @@ fun ForkReaderHeader(
                         contentDescription = goToFeedLabel
                     },
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier =
-                    Modifier
-                        .size(36.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape),
-            ) {
-                Text(
-                    text = feedTitle.trim().take(1).uppercase(),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clearAndSetSemantics { },
-                )
-            }
+            FeedAvatar(feedTitle = feedTitle, feedImageUrl = feedImageUrl)
             Column {
                 WithBidiDeterminedLayoutDirection(paragraph = feedTitle) {
                     Text(
@@ -210,5 +208,48 @@ private fun ReaderAction(
     val color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     IconButton(onClick = onClick) {
         Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(22.dp))
+    }
+}
+
+// The feed's icon, as in the feed list and the drawer, or its first letter while loading or without one
+@Composable
+private fun FeedAvatar(
+    feedTitle: String,
+    feedImageUrl: String?,
+) {
+    var loaded by remember(feedImageUrl) { mutableStateOf(false) }
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier =
+            Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(if (loaded) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.primary),
+    ) {
+        if (!loaded) {
+            Text(
+                text = feedTitle.trim().take(1).uppercase(),
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
+        }
+        if (feedImageUrl != null) {
+            val pixels = with(LocalDensity.current) { 36.dp.roundToPx() }
+            AsyncImage(
+                model =
+                    ImageRequest
+                        .Builder(LocalContext.current)
+                        .data(feedImageUrl)
+                        .scale(Scale.FILL)
+                        .size(pixels)
+                        .precision(Precision.INEXACT)
+                        .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                onSuccess = { loaded = true },
+                modifier = Modifier.size(36.dp),
+            )
+        }
     }
 }

@@ -51,6 +51,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -70,6 +71,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nononsenseapps.feeder.R
+import com.nononsenseapps.feeder.archmodel.Repository
 import com.nononsenseapps.feeder.archmodel.TextToDisplay
 import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.localtranslation.BergamotModelDownloadProgress
@@ -671,6 +673,12 @@ fun ArticleContent(
     val elementPositions = remember { mutableMapOf<Int, Float>() }
     val contentImageUrls = remember(viewState.articleContent) { viewState.articleContent.imageUrls }
 
+    // Fork: the feed's icon for the reader header, the same one the feed list and drawer show
+    val repository: Repository by LocalDI.current.instance()
+    val feedImageUrl by produceState<String?>(null, viewState.articleFeedId) {
+        value = repository.getFeed(viewState.articleFeedId)?.imageUrl?.toString()
+    }
+
     ReaderView(
         screenType = screenType,
         wordCount = viewState.wordCount,
@@ -717,6 +725,7 @@ fun ArticleContent(
         articleScrollState = articleScrollState,
         onShare = onShare,
         onOpenInBrowser = { viewState.articleLink?.let { activityLauncher.openLinkInBrowser(link = it) } },
+        feedImageUrl = feedImageUrl,
     ) { indexOffset ->
         var offsetCounter = indexOffset
 
