@@ -87,7 +87,6 @@ fun ReaderView(
     articleScrollState: ScrollState = rememberScrollState(),
     onShare: () -> Unit = {},
     onOpenInBrowser: () -> Unit = {},
-    onMore: () -> Unit = {},
     articleBody: @Composable (indexOffset: Int) -> Unit,
 ) {
     val dimens = LocalDimens.current
@@ -111,9 +110,13 @@ fun ReaderView(
     SelectionContainer {
         ColumnScrollbar(
             state = articleScrollState,
+            // Fork: a slim, see-through thumb, since images now reach the screen edge under it
             settings =
                 ScrollbarSettings.Default.copy(
-                    thumbUnselectedColor = MaterialTheme.colorScheme.outlineVariant,
+                    thumbThickness = 3.dp,
+                    scrollbarPadding = 2.dp,
+                    thumbUnselectedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    thumbSelectedColor = MaterialTheme.colorScheme.primary,
                 ),
         ) {
             Column(
@@ -268,7 +271,6 @@ fun ReaderView(
                     onOpenInBrowser = onOpenInBrowser,
                     isUnread = isUnread,
                     onMarkAsUnread = onMarkAsUnread,
-                    onMore = onMore,
                     modifier =
                         Modifier
                             .width(dimens.maxReaderWidth)

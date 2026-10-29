@@ -31,10 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -395,22 +392,7 @@ fun ArticleScreen(
                                             onShowToolbarMenu(false)
                                         },
                             ) {
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                        onShare()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.Share,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    text = {
-                                        Text(stringResource(id = R.string.share))
-                                    },
-                                )
-
+                                // Fork: Share, Save and Mark as unread are in the reader's action bar
                                 if (viewState.showSummarize) {
                                     DropdownMenuItem(
                                         onClick = {
@@ -458,44 +440,6 @@ fun ArticleScreen(
                                     )
                                 }
 
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                        onMarkAsUnread()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.VisibilityOff,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    text = {
-                                        Text(stringResource(id = R.string.mark_as_unread))
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                        onToggleBookmark()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.Star,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    text = {
-                                        Text(
-                                            stringResource(
-                                                if (viewState.isBookmarked) {
-                                                    R.string.unsave_article
-                                                } else {
-                                                    R.string.save_article
-                                                },
-                                            ),
-                                        )
-                                    },
-                                )
                                 DropdownMenuItem(
                                     onClick = {
                                         onShowToolbarMenu(false)
@@ -582,7 +526,6 @@ fun ArticleScreen(
                 onBookmark = onToggleBookmark,
                 onMarkAsUnread = onMarkAsUnread,
                 onShare = onShare,
-                onMore = { onShowToolbarMenu(true) },
                 modifier =
                     Modifier
                         .focusGroup()
@@ -717,7 +660,6 @@ fun ArticleContent(
     speechHighlight: SpeechHighlight? = null,
     onUserScroll: (() -> Unit)? = null,
     onShare: () -> Unit = {},
-    onMore: () -> Unit = {},
 ) {
     val toolbarColor = MaterialTheme.colorScheme.surface.toArgb()
 
@@ -775,7 +717,6 @@ fun ArticleContent(
         articleScrollState = articleScrollState,
         onShare = onShare,
         onOpenInBrowser = { viewState.articleLink?.let { activityLauncher.openLinkInBrowser(link = it) } },
-        onMore = onMore,
     ) { indexOffset ->
         var offsetCounter = indexOffset
 

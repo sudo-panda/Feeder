@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Share
@@ -20,10 +19,13 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -82,8 +84,10 @@ fun ForkReaderHeader(
 ) {
     val goToFeedLabel = stringResource(R.string.go_to_feed, feedTitle)
     val readTime =
-        if (readTimeSecs >= 60) {
-            pluralStringResource(R.plurals.fork_min_read, readTimeSecs / 60, readTimeSecs / 60)
+        if (readTimeSecs > 0) {
+            // Rounded up, so short articles show "1 min read"
+            val minutes = (readTimeSecs + 59) / 60
+            pluralStringResource(R.plurals.fork_min_read, minutes, minutes)
         } else {
             null
         }
@@ -165,7 +169,6 @@ fun ForkReaderActionBar(
     onOpenInBrowser: () -> Unit,
     isUnread: Boolean,
     onMarkAsUnread: () -> Unit,
-    onMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -192,7 +195,6 @@ fun ForkReaderActionBar(
                 // Opening an article marks it as read, so this only goes one way, like the old chip
                 onClick = { if (!isUnread) onMarkAsUnread() },
             )
-            ReaderAction(Icons.Default.MoreVert, stringResource(R.string.fork_more), onClick = onMore)
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
@@ -206,15 +208,7 @@ private fun ReaderAction(
     highlighted: Boolean = false,
 ) {
     val color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier =
-            Modifier
-                .clickable(onClick = onClick)
-                .semantics(mergeDescendants = true) { role = Role.Button }
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-    ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+    IconButton(onClick = onClick) {
+        Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(22.dp))
     }
 }
