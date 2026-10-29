@@ -1,0 +1,51 @@
+#!/bin/bash -eu
+# Signs a beta APK built from a pull request with the release key and publishes it as a
+# GitHub pre-release. Runs on master (.github/workflows/fork_fdroid.yml), never with code
+# from the pull request. See FORK.md.
+#
+# Usage: ci/fork-beta-release <unsigned.apk>
+# Env:   SIGNING_PASSWORD, GH_TOKEN, PR_NUMBER, HEAD_SHA, ANDROID_HOME, GITHUB_OUTPUT
+
+UNSIGNED_APK="$1"
+APP_ID="com.nononsenseapps.feeder.fork"
+
+if [ "${#SIGNING_PASSWORD}" -lt 32 ]; then
+  echo "::error::SIGNING_PASSWORD secret is missing or shorter than 32 characters. See FORK.md."
+  exit 1
+fi
+if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "::error::Invalid pull request number or commit"
+  exit 1
+fi
+
+# The APK comes from a pull request build, so check it is a beta of this app
+BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+BADGING="$("$BUILD_TOOLS/aapt2" dump badging "$UNSIGNED_APK" | head -n 1)"
+PACKAGE="$(sed -n "s/^package: name='\([^']*\)'.*/\1/p" <<< "$BADGING")"
+VERSION="$(sed -n "s/.* versionName='\([^']*\)'.*/\1/p" <<< "$BADGING")"
+VERSION_CODE="$(sed -n "s/.* versionCode='\([0-9]*\)'.*/\1/p" <<< "$BADGING")"
+if [ "$PACKAGE" != "$APP_ID" ]; then
+  echo "::error::Unexpected package '$PACKAGE'"
+  exit 1
+fi
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+-beta\.([0-9]+)$ ]] ||
+  [ "$((VERSION_CODE % 100))" -ne "${BASH_REMATCH[1]}" ]; then
+  echo "::error::Unexpected beta version '$VERSION' ($VERSION_CODE)"
+  exit 1
+fi
+if gh release view "v$VERSION" > /dev/null 2>&1; then
+  echo "::error::v$VERSION already exists"
+  exit 1
+fi
+
+SIGNED_APK="feeder-$VERSION.apk"
+KEY_PASSWORD="$SIGNING_PASSWORD" ci/fork-sign-apk "$UNSIGNED_APK" signing/release.p12 "$SIGNED_APK"
+
+gh release create "v$VERSION" "$SIGNED_APK" \
+  --prerelease \
+  --target "$HEAD_SHA" \
+  --title "Feeder $VERSION" \
+  --notes "Beta of pull request #$PR_NUMBER. F-Droid offers it to devices with *Unstable updates* turned on."
+
+gh pr comment "$PR_NUMBER" --body "**Feeder $VERSION** is published. F-Droid offers it as an update to Feeder when *Settings → Unstable updates* is on (pull to refresh the repositories first)."
+echo "::notice::Published beta v$VERSION"

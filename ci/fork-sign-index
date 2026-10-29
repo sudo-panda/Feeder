@@ -12,7 +12,7 @@ for name in entry index-v1; do
   rm -f "$name.jar"
   jar cf "$name.jar" "$name.json"
   jarsigner -keystore "$KEYSTORE" -storepass:env KEY_PASSWORD \
-    -sigalg SHA256withRSA -digestalg SHA-256 "$name.jar" release
+    -sigalg SHA256withRSA -digestalg SHA-256 "$name.jar" release > /dev/null
   # Not -strict: that fails on self-signed certificates, which all Android signing keys are
   jarsigner -verify "$name.jar" | grep -q "^jar verified\.$"
 done

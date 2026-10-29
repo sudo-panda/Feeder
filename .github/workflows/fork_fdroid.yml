@@ -1,0 +1,171 @@
+# Publishes betas and rebuilds the F-Droid repository on GitHub Pages. See FORK.md.
+#
+# - Called by fork_build.yml after a release, to rebuild the repo.
+# - Dispatched on master by fork_beta.yml with a pull request's unsigned beta APK: signs it
+#   with the release key, publishes it as a GitHub pre-release, then rebuilds the repo.
+#
+# The repo holds the latest release plus the newest beta if it is newer. F-Droid suggests
+# the release and offers the beta only with "Unstable updates" turned on.
+#
+# Security notes:
+# - Always runs master's code: pull requests can only hand over an APK, which is checked
+#   before signing. The release environment is restricted to master.
+# - Jobs that can read SIGNING_PASSWORD only run the ci/ scripts with the JDK, Android
+#   build tools and gh. fdroidserver runs in a job without secrets.
+# - Third-party actions are pinned to full commit SHAs, Python packages to hashes.
+name: Fork F-Droid repo
+
+on:
+  workflow_call:
+    inputs:
+      beta_run_id:
+        type: string
+        default: ""
+  workflow_dispatch:
+    inputs:
+      beta_run_id:
+        description: "Fork beta run that built the unsigned beta APK"
+        required: false
+        default: ""
+      pr_number:
+        description: "Pull request the beta is for"
+        required: false
+        default: ""
+      head_sha:
+        description: "Commit the beta was built from"
+        required: false
+        default: ""
+
+permissions: {}
+
+jobs:
+  beta:
+    if: inputs.beta_run_id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Holds the SIGNING_PASSWORD secret, restricted to master
+    environment: release
+    concurrency:
+      group: fork-fdroid-beta
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: download unsigned beta apk
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unsigned-beta-apk
+          run-id: ${{ inputs.beta_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: sign and publish beta
+        env:
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          HEAD_SHA: ${{ inputs.head_sha }}
+        run: ci/fork-beta-release app-fdroid-release-unsigned.apk
+
+  index:
+    needs: beta
+    # Also runs when there was no beta to publish
+    if: always() && (needs.beta.result == 'success' || needs.beta.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      current_version_code: ${{ steps.fetch.outputs.current_version_code }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: download release and beta apks
+        id: fetch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ci/fork-fdroid-fetch apks
+
+      - name: setup python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: install fdroidserver
+        run: pip install --require-hashes -r ci/fdroidserver-requirements.txt
+
+      - name: build F-Droid repo (unsigned index)
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          CERT_HEX: ${{ steps.fetch.outputs.cert_hex }}
+          CURRENT_VERSION_CODE: ${{ steps.fetch.outputs.current_version_code }}
+        run: >-
+          ci/fork-fdroid-index apks site "https://${OWNER,,}.github.io/$REPO/repo"
+          "Feeder fork" "$CERT_HEX" "$CURRENT_VERSION_CODE"
+
+      - name: upload F-Droid repo
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unsigned-repo
+          retention-days: 1
+          if-no-files-found: error
+          path: site/
+
+  publish:
+    needs: index
+    if: always() && needs.index.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: release
+    concurrency:
+      group: fork-fdroid-publish
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: download F-Droid repo
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: unsigned-repo
+          path: site
+
+      - name: sign F-Droid index
+        env:
+          KEY_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: ci/fork-sign-index site/repo signing/release.p12
+
+      - name: save F-Droid repo
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  pages:
+    needs: publish
+    if: always() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}repo
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: deploy F-Droid repo
+        id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

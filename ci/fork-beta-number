@@ -1,0 +1,23 @@
+#!/bin/bash -eu
+# Prints the next beta number of the release this branch will become, based on the
+# existing v<upstream>.<forkBuild>-beta.<n> pre-releases. See FORK.md.
+#
+# Usage: ci/fork-beta-number
+# Env:   GH_TOKEN
+
+UPSTREAM="$(sed -n 's/^ *versionName = "\([0-9.]*\)"$/\1/p' app/build.gradle.kts | head -n 1)"
+FORK_BUILD="$(sed -n 's/^forkBuild=\([0-9]*\)$/\1/p' fork.properties)"
+if [ -z "$UPSTREAM" ] || [ -z "$FORK_BUILD" ]; then
+  echo "::error::Could not read the version from app/build.gradle.kts and fork.properties" >&2
+  exit 1
+fi
+
+PREFIX="v$UPSTREAM.$FORK_BUILD-beta."
+LAST="$(gh release list --limit 200 --json tagName --jq '.[].tagName' |
+  grep -F "$PREFIX" | sed -n "s/^.*-beta\.\([0-9]*\)$/\1/p" | sort -n | tail -n 1)"
+NEXT=$((${LAST:-0} + 1))
+if [ "$NEXT" -gt 99 ]; then
+  echo "::error::No beta numbers left for ${PREFIX%.} (max 99)" >&2
+  exit 1
+fi
+echo "$NEXT"
