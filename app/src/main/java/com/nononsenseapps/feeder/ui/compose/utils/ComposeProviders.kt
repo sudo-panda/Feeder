@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.DpSize
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nononsenseapps.feeder.archmodel.AccentColor
 import com.nononsenseapps.feeder.archmodel.ThemeOptions
 import com.nononsenseapps.feeder.base.DIAwareComponentActivity
 import com.nononsenseapps.feeder.base.diAwareViewModel
@@ -24,7 +25,7 @@ fun DIAwareComponentActivity.withAllProviders(content: @Composable () -> Unit) {
         val viewModel: CommonActivityViewModel = diAwareViewModel()
         val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
         val darkThemePreference by viewModel.darkThemePreference.collectAsStateWithLifecycle()
-        val dynamicColors by viewModel.dynamicColors.collectAsStateWithLifecycle()
+        val accentColor by viewModel.accentColor.collectAsStateWithLifecycle()
         val textScale by viewModel.textScale.collectAsStateWithLifecycle()
         val font by viewModel.font.collectAsStateWithLifecycle()
         val justifyText by viewModel.justifyText.collectAsStateWithLifecycle()
@@ -35,7 +36,8 @@ fun DIAwareComponentActivity.withAllProviders(content: @Composable () -> Unit) {
                         FeederTheme(
                             currentTheme = currentTheme,
                             darkThemePreference = darkThemePreference,
-                            dynamicColors = dynamicColors,
+                            dynamicColors = accentColor == AccentColor.WALLPAPER,
+                            accentColor = accentColor,
                         ) {
                             WithFeederTextToolbar(content)
                         }

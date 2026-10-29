@@ -17,6 +17,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.nononsenseapps.feeder.archmodel.AccentColor
 import com.nononsenseapps.feeder.archmodel.DarkThemePreferences
 import com.nononsenseapps.feeder.archmodel.ThemeOptions
 import com.nononsenseapps.feeder.ui.compose.settings.FontSelection
@@ -146,11 +147,12 @@ fun ComponentActivity.FeederTheme(
     currentTheme: ThemeOptions = ThemeOptions.SYSTEM,
     darkThemePreference: DarkThemePreferences = DarkThemePreferences.BLACK,
     dynamicColors: Boolean = false,
+    accentColor: AccentColor? = null,
     content: @Composable () -> Unit,
 ) {
     val darkSystemIcons = currentTheme.isDarkSystemIcons()
     val darkNavIcons = currentTheme.isDarkNavIcons()
-    val colorScheme = currentTheme.getColorScheme(darkThemePreference, dynamicColors)
+    val colorScheme = currentTheme.getColorScheme(darkThemePreference, dynamicColors, accentColor)
     val typographySettings = LocalTypographySettings.current
 
     val feederTypography =
@@ -257,6 +259,7 @@ private fun ThemeOptions.isDarkNavIcons(): Boolean {
 private fun ThemeOptions.getColorScheme(
     darkThemePreference: DarkThemePreferences,
     dynamicColors: Boolean,
+    accentColor: AccentColor? = null,
 ): ColorScheme {
     val dark =
         when (this) {
@@ -278,6 +281,11 @@ private fun ThemeOptions.getColorScheme(
 
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dynamicColors && !dark -> {
                 dynamicLightColorScheme(LocalContext.current)
+            }
+
+            // Fork: Boost-style colours
+            accentColor != null && this != ThemeOptions.E_INK -> {
+                forkColorScheme(accentColor, dark, black = darkThemePreference == DarkThemePreferences.BLACK)
             }
 
             dark -> darkColors

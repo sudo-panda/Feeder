@@ -15,6 +15,9 @@
 >   read feeds dimmed.
 > - **More feed icons:** feeds that declare no icon fall back to their site's `favicon.ico`.
 > - **New app icon:** an F whose arms bend into RSS arcs, white on forest green.
+> - **Boost-style colours:** neutral grey backgrounds and cards with one accent colour
+>   (green by default). *Settings → Accent color* replaces *Dynamic colors*; pick
+>   *Wallpaper* there to keep Android 12+ dynamic colours.
 > - **Settings → Data:** importing and exporting feeds (OPML) and saved articles moved here
 >   from the feed screen's ⋮ menu.
 > - **Separate app id** (`com.nononsenseapps.feeder.fork`), so it installs next to the

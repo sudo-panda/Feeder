@@ -302,6 +302,15 @@ class SettingsStore(
         sp.edit().putBoolean(PREF_DYNAMIC_THEME, value).apply()
     }
 
+    // Fork: accent colour, see AccentColor
+    private val _accentColor = MutableStateFlow(accentColorFromString(sp.getString(PREF_FORK_ACCENT_COLOR, null)))
+    val accentColor = _accentColor.asStateFlow()
+
+    fun setAccentColor(value: AccentColor) {
+        _accentColor.value = value
+        sp.edit().putString(PREF_FORK_ACCENT_COLOR, value.name.lowercase()).apply()
+    }
+
     private val _textScale =
         MutableStateFlow(
             sp.getFloat(
@@ -682,6 +691,7 @@ const val PREF_THEME = "pref_theme"
  */
 const val PREF_DARK_THEME = "pref_dark_theme"
 const val PREF_DYNAMIC_THEME = "pref_dynamic_theme"
+const val PREF_FORK_ACCENT_COLOR = "pref_fork_accent_color"
 
 /**
  * Sort settings

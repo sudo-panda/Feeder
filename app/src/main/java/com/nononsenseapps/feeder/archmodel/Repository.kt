@@ -298,6 +298,10 @@ class Repository(
 
     fun setUseDynamicTheme(value: Boolean) = settingsStore.setUseDynamicTheme(value)
 
+    val accentColor = settingsStore.accentColor
+
+    fun setAccentColor(value: AccentColor) = settingsStore.setAccentColor(value)
+
     val textScale = settingsStore.textScale
 
     fun setTextScale(value: Float) = settingsStore.setTextScale(value)

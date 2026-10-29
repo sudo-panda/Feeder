@@ -37,11 +37,11 @@ import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.automirrored.outlined.WrapText
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.outlined.Animation
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.BatterySaver
 import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.ColorLens
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Devices
@@ -116,6 +116,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.shouldShowRationale
 import com.nononsenseapps.feeder.R
+import com.nononsenseapps.feeder.archmodel.AccentColor
 import com.nononsenseapps.feeder.archmodel.DarkThemePreferences
 import com.nononsenseapps.feeder.archmodel.FeedItemStyle
 import com.nononsenseapps.feeder.archmodel.ItemOpener
@@ -245,8 +246,8 @@ fun SettingsScreen(
             onUseInAppAudioPlayerChange = settingsViewModel::setUseInAppAudioPlayer,
             batteryOptimizationIgnoredValue = viewState.batteryOptimizationIgnored,
             onOpenSyncSettings = onNavigateToSyncScreen,
-            useDynamicTheme = viewState.useDynamicTheme,
-            onUseDynamicTheme = settingsViewModel::setUseDynamicTheme,
+            currentAccentColor = viewState.accentColor.asAccentColorOption(),
+            onAccentColorChange = { value -> settingsViewModel.setAccentColor(value.accentColor) },
             onBlockListAdd = settingsViewModel::addToBlockList,
             onBlockListRemove = settingsViewModel::removeFromBlockList,
             feedsSettings = ImmutableHolder(viewState.feedsSettings),
@@ -351,8 +352,8 @@ private fun SettingsScreenPreview() {
             onUseInAppAudioPlayerChange = {},
             batteryOptimizationIgnoredValue = false,
             onOpenSyncSettings = {},
-            useDynamicTheme = true,
-            onUseDynamicTheme = {},
+            currentAccentColor = AccentColor.GREEN.asAccentColorOption(),
+            onAccentColorChange = {},
             onBlockListAdd = {},
             onBlockListRemove = {},
             feedsSettings = ImmutableHolder(emptyList()),
@@ -444,8 +445,8 @@ fun SettingsList(
     onUseInAppAudioPlayerChange: (Boolean) -> Unit,
     batteryOptimizationIgnoredValue: Boolean,
     onOpenSyncSettings: () -> Unit,
-    useDynamicTheme: Boolean,
-    onUseDynamicTheme: (Boolean) -> Unit,
+    currentAccentColor: AccentColorOption,
+    onAccentColorChange: (AccentColorOption) -> Unit,
     onBlockListAdd: (String) -> Unit,
     onBlockListRemove: (String) -> Unit,
     feedsSettings: ImmutableHolder<List<UIFeedSettings>>,
@@ -524,25 +525,21 @@ fun SettingsList(
                     .width(dimens.maxContentWidth),
         )
 
-        SwitchSetting(
-            title = stringResource(id = R.string.dynamic_theme_use),
-            icon = { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) },
-            checked = useDynamicTheme,
-            onCheckedChange = onUseDynamicTheme,
-            description =
-                when {
-                    isAndroidSAndAbove -> {
-                        null
-                    }
-
-                    else -> {
-                        stringResource(
-                            id = R.string.only_available_on_android_n,
-                            "12",
-                        )
-                    }
-                },
-            enabled = isAndroidSAndAbove,
+        // Fork: accent colour instead of the dynamic colors switch
+        MenuSetting(
+            title = stringResource(id = R.string.accent_color),
+            icon = { Icon(Icons.Outlined.ColorLens, contentDescription = null) },
+            currentValue = currentAccentColor,
+            values =
+                ImmutableHolder(
+                    AccentColor.entries
+                        .filter { it != AccentColor.WALLPAPER || isAndroidSAndAbove }
+                        .map { it.asAccentColorOption() },
+                ),
+            onSelection = onAccentColorChange,
+            modifier =
+                Modifier
+                    .width(dimens.maxContentWidth),
         )
 
         MenuSetting(
@@ -1884,4 +1881,20 @@ private fun DownloadedModelsSection(
             }
         }
     }
+}
+
+// Fork: see AccentColor
+@Composable
+fun AccentColor.asAccentColorOption() =
+    AccentColorOption(
+        accentColor = this,
+        name = stringResource(id = stringId),
+    )
+
+@Immutable
+data class AccentColorOption(
+    val accentColor: AccentColor,
+    val name: String,
+) {
+    override fun toString() = name
 }
