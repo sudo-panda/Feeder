@@ -2,8 +2,6 @@ package com.nononsenseapps.feeder.ui.compose.feed
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
@@ -48,7 +46,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -109,7 +106,6 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import com.nononsenseapps.feeder.ApplicationCoroutineScope
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.archmodel.FeedItemStyle
 import com.nononsenseapps.feeder.archmodel.FeedType
@@ -119,10 +115,6 @@ import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.localtranslation.BergamotModelDownloadProgress
 import com.nononsenseapps.feeder.model.LocaleOverride
 import com.nononsenseapps.feeder.model.ReadAloudProgress
-import com.nononsenseapps.feeder.model.export.exportSavedArticles
-import com.nononsenseapps.feeder.model.export.importSavedArticles
-import com.nononsenseapps.feeder.model.opml.exportOpml
-import com.nononsenseapps.feeder.model.opml.importOpml
 import com.nononsenseapps.feeder.ui.compose.components.TranslationProgressContent
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
 import com.nononsenseapps.feeder.ui.compose.deletefeed.DeletableFeed
@@ -167,8 +159,6 @@ import org.kodein.di.compose.LocalDI
 import org.kodein.di.compose.instance
 import org.kodein.di.instance
 import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalTime
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val LOG_TAG = "FEEDER_FEEDSCREEN"
@@ -188,52 +178,6 @@ fun FeedScreen(
     val translatedFeedCards by viewModel.translatedFeedCards.collectAsStateWithLifecycle()
     val pagedFeedItems = viewModel.currentFeedListItems.collectAsLazyPagingItems()
     val pagedNavDrawerItems = viewModel.pagedNavDrawerItems.collectAsLazyPagingItems()
-
-    val di = LocalDI.current
-    val savedArticleExporter =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("application/json"),
-        ) { uri ->
-            if (uri != null) {
-                val applicationCoroutineScope: ApplicationCoroutineScope by di.instance()
-                applicationCoroutineScope.launch {
-                    exportSavedArticles(di, uri)
-                }
-            }
-        }
-    val opmlExporter =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.CreateDocument("text/x-opml"),
-        ) { uri ->
-            if (uri != null) {
-                val applicationCoroutineScope: ApplicationCoroutineScope by di.instance()
-                applicationCoroutineScope.launch {
-                    exportOpml(di, uri)
-                }
-            }
-        }
-    val opmlImporter =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocument(),
-        ) { uri ->
-            if (uri != null) {
-                val applicationCoroutineScope: ApplicationCoroutineScope by di.instance()
-                applicationCoroutineScope.launch {
-                    importOpml(di, uri)
-                }
-            }
-        }
-    val savedArticleImporter =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.OpenDocument(),
-        ) { uri ->
-            if (uri != null) {
-                val applicationCoroutineScope: ApplicationCoroutineScope by di.instance()
-                applicationCoroutineScope.launch {
-                    importSavedArticles(di, uri)
-                }
-            }
-        }
 
     val activityLauncher: ActivityLauncher by LocalDI.current.instance()
 
@@ -362,70 +306,6 @@ fun FeedScreen(
             },
             onSettings = {
                 SettingsDestination.navigate(navController)
-            },
-            onImport = {
-                try {
-                    opmlImporter.launch(
-                        arrayOf(
-                            // All valid for OPML files
-                            "text/xml",
-                            "text/x-opml",
-                            "application/xml",
-                            // This is the mimetype the file actually gets when exported
-                            "application/json",
-                            "application/octet-stream",
-                            // But just in case a file isn't named right etc, accept all
-                            "*/*",
-                        ),
-                    )
-                } catch (_: Exception) {
-                    // ActivityNotFoundException in particular
-                    coroutineScope.launch {
-                        toastMaker.makeToast(R.string.failed_to_import_OPML)
-                    }
-                }
-            },
-            onExportOPML = {
-                try {
-                    opmlExporter.launch("feeder-export-${LocalDate.now()}-${LocalTime.now().toSecondOfDay()}.opml")
-                } catch (_: Exception) {
-                    // ActivityNotFoundException in particular
-                    coroutineScope.launch {
-                        toastMaker.makeToast(R.string.failed_to_export_OPML)
-                    }
-                }
-            },
-            onImportSavedArticles = {
-                try {
-                    savedArticleImporter.launch(
-                        arrayOf(
-                            "text/plain",
-                            // This is the mimetype the file may get from older exports
-                            "application/octet-stream",
-                            // But just in case a file isn't named right etc, accept all
-                            "*/*",
-                        ),
-                    )
-                } catch (_: Exception) {
-                    // ActivityNotFoundException in particular
-                    coroutineScope.launch {
-                        toastMaker.makeToast(R.string.failed_to_import_saved_articles)
-                    }
-                }
-            },
-            onExportSavedArticles = {
-                try {
-                    savedArticleExporter.launch(
-                        "feeder-saved-articles-${LocalDate.now()}-${
-                            LocalTime.now().toSecondOfDay()
-                        }.json",
-                    )
-                } catch (_: Exception) {
-                    // ActivityNotFoundException in particular
-                    coroutineScope.launch {
-                        toastMaker.makeToast(R.string.failed_to_export_saved_articles)
-                    }
-                }
             },
             drawerState = drawerState,
             markAsUnread = { itemId, unread ->
@@ -556,10 +436,6 @@ fun FeedScreen(
     onShowRenameTagDialog: () -> Unit,
     onDismissRenameTagDialog: () -> Unit,
     onSettings: () -> Unit,
-    onImport: () -> Unit,
-    onExportOPML: () -> Unit,
-    onImportSavedArticles: () -> Unit,
-    onExportSavedArticles: () -> Unit,
     drawerState: DrawerState,
     markAsUnread: (Long, Boolean) -> Unit,
     markAsReadOnSwipe: (id: Long, unread: Boolean, saved: Boolean) -> Unit,
@@ -956,67 +832,6 @@ fun FeedScreen(
                                     },
                                 )
                             }
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                onClick = {
-                                    onShowToolbarMenu(false)
-                                    onImport()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.ImportExport,
-                                        contentDescription = null,
-                                    )
-                                },
-                                text = {
-                                    Text(stringResource(id = R.string.import_feeds_from_opml))
-                                },
-                            )
-                            DropdownMenuItem(
-                                onClick = {
-                                    onShowToolbarMenu(false)
-                                    onExportOPML()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.ImportExport,
-                                        contentDescription = null,
-                                    )
-                                },
-                                text = {
-                                    Text(stringResource(id = R.string.export_feeds_to_opml))
-                                },
-                            )
-                            DropdownMenuItem(
-                                onClick = {
-                                    onShowToolbarMenu(false)
-                                    onImportSavedArticles()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.ImportExport,
-                                        contentDescription = null,
-                                    )
-                                },
-                                text = {
-                                    Text(stringResource(id = R.string.import_saved_articles))
-                                },
-                            )
-                            DropdownMenuItem(
-                                onClick = {
-                                    onShowToolbarMenu(false)
-                                    onExportSavedArticles()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.ImportExport,
-                                        contentDescription = null,
-                                    )
-                                },
-                                text = {
-                                    Text(stringResource(id = R.string.export_saved_articles))
-                                },
-                            )
                             HorizontalDivider()
                             DropdownMenuItem(
                                 onClick = {

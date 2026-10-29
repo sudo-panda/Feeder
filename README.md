@@ -10,8 +10,10 @@
 >   settings row. Tag folders show a folder icon with the expand arrow on the right, and
 >   feeds inside a tag are indented.
 > - **New app icon.**
+> - **Settings → Data:** importing and exporting feeds (OPML) and saved articles moved here
+>   from the feed screen's ⋮ menu.
 > - **Separate app id** (`com.nononsenseapps.feeder.fork`), so it installs next to the
->   official Feeder. Move feeds over with OPML export/import.
+>   official Feeder. Move feeds over with OPML export/import (*Settings → Data* in this fork).
 > - **Versioning:** `<upstream version>.<fork build>`, e.g. `2.25.0.1`.
 > - **Releases:** signed APKs on [GitHub Releases](https://github.com/sudo-panda/Feeder/releases)
 >   and in this fork's own F-Droid repository (below). Pull requests can also be tried as a
