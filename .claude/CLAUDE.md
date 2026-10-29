@@ -23,6 +23,9 @@ This is a personal fork of Feeder that ships signed APKs from `master`. Read FOR
    app (F-Droid "Unstable updates"), which is another reason to push only when the owner
    approves. The owner reviews and merges it. Never merge pull requests yourself and never push to `master`.
 
+For visual design work (icons, layouts, colours), show the owner rendered previews and
+get their OK on the design before writing it into the app's files.
+
 Keep diffs small and local so upstream merges stay easy. Prefer new private composables
 and appended code over rewriting upstream code. Mark fork-specific code with a
 `// Fork:` comment where it is not obvious.
