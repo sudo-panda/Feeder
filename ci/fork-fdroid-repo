@@ -1,0 +1,36 @@
+#!/bin/bash -eu
+# Builds a signed F-Droid repository containing one APK, for GitHub Pages.
+# Run by ci/fork-release. See FORK.md.
+#
+# Usage: ci/fork-fdroid-repo <signed.apk> <output dir>
+# Env:   SIGNING_PASSWORD, ANDROID_HOME, GITHUB_REPOSITORY
+
+SIGNED_APK="$(realpath "$1")"
+OUT_DIR="$2"
+KEYSTORE="$(realpath signing/release.p12)"
+OWNER="${GITHUB_REPOSITORY%%/*}"
+REPO_URL="https://${OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/repo"
+
+WORK_DIR="$(mktemp -d)"
+mkdir "$WORK_DIR/repo"
+cp "$SIGNED_APK" "$WORK_DIR/repo/"
+
+# Passwords are read from the environment, never written to disk
+cat > "$WORK_DIR/config.yml" <<EOF
+repo_url: $REPO_URL
+repo_name: Feeder fork
+repo_description: Personal builds of Feeder from github.com/$GITHUB_REPOSITORY
+keystore: $KEYSTORE
+repo_keyalias: release
+keystorepass: {env: SIGNING_PASSWORD}
+keypass: {env: SIGNING_PASSWORD}
+sdk_path: $ANDROID_HOME
+EOF
+chmod 600 "$WORK_DIR/config.yml"
+
+(cd "$WORK_DIR" && fdroid update --create-metadata)
+
+mkdir -p "$OUT_DIR"
+cp -r "$WORK_DIR/repo" "$OUT_DIR/"
+rm -rf "$WORK_DIR"
+echo "F-Droid repo: $REPO_URL"

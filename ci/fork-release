@@ -1,5 +1,6 @@
 #!/bin/bash -eu
-# Signs an unsigned release APK and publishes it as a GitHub release.
+# Signs an unsigned release APK, publishes it as a GitHub release and builds
+# the F-Droid repo (deployed to GitHub Pages by the workflow).
 # Run by .github/workflows/fork_build.yml on master. See FORK.md.
 #
 # Usage: ci/fork-release <unsigned.apk>
@@ -60,11 +61,18 @@ if [ -z "$CERT_SHA256" ]; then
 fi
 APK_SHA256="$(sha256sum "$SIGNED_APK" | cut -d ' ' -f 1)"
 
+# Built before publishing anything so a failure leaves no half-done release
+ci/fork-fdroid-repo "$SIGNED_APK" site
+OWNER="${GITHUB_REPOSITORY%%/*}"
+FDROID_REPO_URL="https://${OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/repo"
+
 gh release create "$TAG" "$SIGNED_APK" \
   --target "$GITHUB_SHA" \
   --title "Feeder $VERSION" \
   --generate-notes \
   --notes "Signing certificate SHA-256: \`$CERT_SHA256\`
 APK SHA-256: \`$APK_SHA256\`
+F-Droid repository: $FDROID_REPO_URL?fingerprint=$CERT_SHA256
 "
+echo "published=true" >> "$GITHUB_OUTPUT"
 echo "::notice::Published $TAG (certificate SHA-256 $CERT_SHA256)"

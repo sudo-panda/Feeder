@@ -2,7 +2,8 @@
 #
 # - Any branch: lint + unit tests + release build (no secrets involved).
 # - master: release build, then a separate job signs the APK and publishes a
-#   GitHub release, but only if the version (see fork.properties) is new.
+#   GitHub release plus an F-Droid repo on GitHub Pages, but only if the version
+#   (see fork.properties) is new.
 #
 # Security notes:
 # - The signing password only exists in the "release" environment, which is
@@ -72,6 +73,8 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: write
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
     steps:
       - name: checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,8 +84,36 @@ jobs:
         with:
           name: unsigned-apk
 
+      - name: install fdroidserver
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends fdroidserver
+
       - name: sign and publish
+        id: publish
         env:
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           GH_TOKEN: ${{ github.token }}
         run: ci/fork-release app-fdroid-release-unsigned.apk
+
+      - name: save F-Droid repo
+        if: steps.publish.outputs.published == 'true'
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  pages:
+    needs: release
+    if: needs.release.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}repo
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: deploy F-Droid repo
+        id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
