@@ -15,7 +15,6 @@ import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -159,9 +158,18 @@ fun ForkReaderActionBar(
     // Lines the first icon up with the text: the 22dp icon sits 13dp inside its 48dp button
     startPadding: Dp = 0.dp,
 ) {
-    // Same buttons, size and alignment as the feed cards' action bar
-    Column(modifier = modifier) {
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    // Same buttons, size and alignment as the feed cards' action bar. The 48dp buttons already have
+    // space around their icons, so the bar takes up 10dp less above and below than it measures.
+    Column(
+        modifier =
+            modifier.layout { measurable, constraints ->
+                val trim = 10.dp.roundToPx()
+                val placeable = measurable.measure(constraints)
+                layout(placeable.width, (placeable.height - 2 * trim).coerceAtLeast(0)) {
+                    placeable.place(0, -trim)
+                }
+            },
+    ) {
         Row(
             modifier =
                 Modifier
