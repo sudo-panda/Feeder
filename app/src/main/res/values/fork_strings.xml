@@ -25,4 +25,8 @@
   <string name="accent_tiles_hint">Last tile: a custom color.</string>
   <string name="accent_light">Light</string>
   <string name="accent_dark">Dark</string>
+  <string name="find_in_article">Find in article</string>
+  <string name="find_previous">Previous match</string>
+  <string name="find_next">Next match</string>
+  <string name="close_find">Close search</string>
 </resources>

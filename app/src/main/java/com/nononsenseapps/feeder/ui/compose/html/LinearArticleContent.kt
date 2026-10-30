@@ -108,6 +108,7 @@ import com.nononsenseapps.feeder.model.html.LinearVideo
 import com.nononsenseapps.feeder.ui.compose.coil.RestrainedFillWidthScaling
 import com.nononsenseapps.feeder.ui.compose.coil.RestrainedFitScaling
 import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
+import com.nononsenseapps.feeder.ui.compose.feedarticle.LocalFindHighlights
 import com.nononsenseapps.feeder.ui.compose.feedarticle.LocalReaderBleed
 import com.nononsenseapps.feeder.ui.compose.feedarticle.bleed
 import com.nononsenseapps.feeder.ui.compose.layouts.Table
@@ -680,15 +681,32 @@ fun LinearTextContent(
                     MaterialTheme.colorScheme.onSurface,
                     MaterialTheme.colorScheme.primary,
                 )
+            // Fork: matches of the reader's find in article
+            val findRanges = LocalFindHighlights.current[linearText]
+            val findColor = MaterialTheme.colorScheme.primary
+            val onFindColor = MaterialTheme.colorScheme.onPrimary
             val annotatedString =
-                remember(original, range, highlightColor) {
-                    if (range == null) {
+                remember(original, range, highlightColor, findRanges, findColor, onFindColor) {
+                    if (range == null && findRanges == null) {
                         original
                     } else {
                         AnnotatedString
                             .Builder(original)
                             .apply {
-                                addStyle(SpanStyle(background = highlightColor), range.first, (range.last + 1).coerceAtMost(original.length))
+                                if (range != null) {
+                                    addStyle(SpanStyle(background = highlightColor), range.first, (range.last + 1).coerceAtMost(original.length))
+                                }
+                                findRanges?.forEach { (match, current) ->
+                                    addStyle(
+                                        if (current) {
+                                            SpanStyle(background = findColor, color = onFindColor)
+                                        } else {
+                                            SpanStyle(background = findColor.copy(alpha = 0.25f))
+                                        },
+                                        match.first,
+                                        (match.last + 1).coerceAtMost(original.length),
+                                    )
+                                }
                             }.toAnnotatedString()
                     }
                 }

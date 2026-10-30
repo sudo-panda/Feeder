@@ -25,6 +25,8 @@
 >   line spacing, justify, edge-to-edge images and font.
 > - **Feed avatars everywhere:** the same round feed icon on cards, in the sidebar and in the
 >   reader; feeds without an icon get their first letter on a colour of their own.
+> - **Find in article:** the search button in the reader's top bar highlights every match and
+>   jumps between them, like Boost.
 > - **Swipe between articles:** in the reader, swipe left for the next article and right for
 >   the previous one, in the order of the list you opened it from.
 > - **Friendlier empty list:** "All caught up" with buttons to open another feed or add one.
