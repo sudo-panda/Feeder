@@ -15,6 +15,23 @@ class ForkSameImageTest {
     }
 
     @Test
+    fun matchesCdnUrlsThatWrapTheOriginal() {
+        val original = "http%3A%2F%2Fnpr-brightspot.s3.amazonaws.com%2F59%2F9c%2Fe2a1%2Fgettyimages-2219000123.jpg"
+        assertTrue(
+            sameImage(
+                "https://npr.brightspotcdn.com/dims3/default/strip/false/crop/6000x4000+0+0/resize/1400/quality/100/format/jpeg/?url=$original",
+                "https://npr.brightspotcdn.com/dims3/default/strip/false/crop/6000x4000+0+0/resize/600/quality/85/format/webp/?url=$original",
+            ),
+        )
+        assertFalse(
+            sameImage(
+                "https://npr.brightspotcdn.com/dims3/default/resize/600/format/jpeg/?url=$original",
+                "https://npr.brightspotcdn.com/dims3/default/resize/600/format/jpeg/?url=http%3A%2F%2Fexample.com%2Fother-picture.jpg",
+            ),
+        )
+    }
+
+    @Test
     fun keepsDifferentPictures() {
         assertFalse(sameImage("https://example.com/drone-swarm.jpg", "https://example.com/mountain-range.jpg"))
         // Too short to tell apart

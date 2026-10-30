@@ -7,6 +7,7 @@ import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -47,6 +49,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -326,157 +329,173 @@ fun ArticleScreen(
                 .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
         contentWindowInsets = WindowInsets.statusBars,
         topBar = {
-            SensibleTopAppBar(
-                modifier =
-                    Modifier
-                        .focusGroup()
-                        .focusRequester(focusTopBar)
-                        .focusProperties {
-                            down = focusArticle
-                        },
-                scrollBehavior = scrollBehavior,
-                title = viewState.feedDisplayTitle,
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.go_back),
-                        )
-                    }
-                },
-                actions = {
-                    PlainTooltipBox(tooltip = { Text(stringResource(R.string.fetch_full_article)) }) {
-                        IconButton(
-                            onClick = onToggleFullText,
-                        ) {
+            // Fork: keeps the status bar covered once the top bar has scrolled away
+            Box {
+                SensibleTopAppBar(
+                    modifier =
+                        Modifier
+                            .focusGroup()
+                            .focusRequester(focusTopBar)
+                            .focusProperties {
+                                down = focusArticle
+                            },
+                    scrollBehavior = scrollBehavior,
+                    title = viewState.feedDisplayTitle,
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateUp) {
                             Icon(
-                                Icons.AutoMirrored.Filled.Article,
-                                contentDescription = stringResource(R.string.fetch_full_article),
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.go_back),
                             )
                         }
-                    }
-
-                    PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_in_web_view)) }) {
-                        IconButton(
-                            onClick = onOpenInCustomTab,
-                        ) {
-                            Icon(
-                                Icons.Default.OpenInBrowser,
-                                contentDescription = stringResource(id = R.string.open_in_web_view),
-                            )
-                        }
-                    }
-
-                    PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.reader_appearance)) }) {
-                        IconButton(onClick = { showAppearance = true }) {
-                            Icon(
-                                Icons.Outlined.FormatSize,
-                                contentDescription = stringResource(id = R.string.reader_appearance),
-                            )
-                        }
-                    }
-
-                    PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_menu)) }) {
-                        Box {
+                    },
+                    actions = {
+                        PlainTooltipBox(tooltip = { Text(stringResource(R.string.fetch_full_article)) }) {
                             IconButton(
-                                onClick = { onShowToolbarMenu(true) },
+                                onClick = onToggleFullText,
                             ) {
                                 Icon(
-                                    Icons.Default.MoreVert,
-                                    contentDescription = stringResource(id = R.string.open_menu),
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = viewState.showToolbarMenu,
-                                onDismissRequest = { onShowToolbarMenu(false) },
-                                modifier =
-                                    Modifier
-                                        .onKeyEventLikeEscape {
-                                            onShowToolbarMenu(false)
-                                        },
-                            ) {
-                                // Fork: Share, Save and Mark as unread are in the reader's action bar
-                                if (viewState.showSummarize) {
-                                    DropdownMenuItem(
-                                        onClick = {
-                                            onShowToolbarMenu(false)
-                                            onSummarize()
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.AutoFixHigh,
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        text = {
-                                            Text(stringResource(id = R.string.summarize))
-                                        },
-                                    )
-                                }
-
-                                if (viewState.showTranslate) {
-                                    DropdownMenuItem(
-                                        onClick = {
-                                            onShowToolbarMenu(false)
-                                            onTranslate()
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Translate,
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        text = {
-                                            Text(
-                                                stringResource(
-                                                    if (viewState.isShowingTranslated) {
-                                                        R.string.show_original_language
-                                                    } else {
-                                                        R.string.translate_article
-                                                    },
-                                                    viewState.translationSourceLanguage.ifBlank {
-                                                        stringResource(R.string.original_article)
-                                                    },
-                                                ),
-                                            )
-                                        },
-                                    )
-                                }
-
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                        ttsOnPlay()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.CustomFilled.TextToSpeech,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    text = {
-                                        Text(stringResource(id = R.string.read_article))
-                                    },
-                                )
-                                // Hidden button for TalkBack
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                    },
-                                    text = {},
-                                    modifier =
-                                        Modifier
-                                            .height(0.dp)
-                                            .safeSemantics {
-                                                contentDescription = closeMenuText
-                                                role = Role.Button
-                                            },
+                                    Icons.AutoMirrored.Filled.Article,
+                                    contentDescription = stringResource(R.string.fetch_full_article),
                                 )
                             }
                         }
-                    }
-                },
-            )
+
+                        PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_in_web_view)) }) {
+                            IconButton(
+                                onClick = onOpenInCustomTab,
+                            ) {
+                                Icon(
+                                    Icons.Default.OpenInBrowser,
+                                    contentDescription = stringResource(id = R.string.open_in_web_view),
+                                )
+                            }
+                        }
+
+                        PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.reader_appearance)) }) {
+                            IconButton(onClick = { showAppearance = true }) {
+                                Icon(
+                                    Icons.Outlined.FormatSize,
+                                    contentDescription = stringResource(id = R.string.reader_appearance),
+                                )
+                            }
+                        }
+
+                        PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_menu)) }) {
+                            Box {
+                                IconButton(
+                                    onClick = { onShowToolbarMenu(true) },
+                                ) {
+                                    Icon(
+                                        Icons.Default.MoreVert,
+                                        contentDescription = stringResource(id = R.string.open_menu),
+                                    )
+                                }
+                                DropdownMenu(
+                                    expanded = viewState.showToolbarMenu,
+                                    onDismissRequest = { onShowToolbarMenu(false) },
+                                    modifier =
+                                        Modifier
+                                            .onKeyEventLikeEscape {
+                                                onShowToolbarMenu(false)
+                                            },
+                                ) {
+                                    // Fork: Share, Save and Mark as unread are in the reader's action bar
+                                    if (viewState.showSummarize) {
+                                        DropdownMenuItem(
+                                            onClick = {
+                                                onShowToolbarMenu(false)
+                                                onSummarize()
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.AutoFixHigh,
+                                                    contentDescription = null,
+                                                )
+                                            },
+                                            text = {
+                                                Text(stringResource(id = R.string.summarize))
+                                            },
+                                        )
+                                    }
+
+                                    if (viewState.showTranslate) {
+                                        DropdownMenuItem(
+                                            onClick = {
+                                                onShowToolbarMenu(false)
+                                                onTranslate()
+                                            },
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Default.Translate,
+                                                    contentDescription = null,
+                                                )
+                                            },
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        if (viewState.isShowingTranslated) {
+                                                            R.string.show_original_language
+                                                        } else {
+                                                            R.string.translate_article
+                                                        },
+                                                        viewState.translationSourceLanguage.ifBlank {
+                                                            stringResource(R.string.original_article)
+                                                        },
+                                                    ),
+                                                )
+                                            },
+                                        )
+                                    }
+
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            onShowToolbarMenu(false)
+                                            ttsOnPlay()
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.CustomFilled.TextToSpeech,
+                                                contentDescription = null,
+                                            )
+                                        },
+                                        text = {
+                                            Text(stringResource(id = R.string.read_article))
+                                        },
+                                    )
+                                    // Hidden button for TalkBack
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            onShowToolbarMenu(false)
+                                        },
+                                        text = {},
+                                        modifier =
+                                            Modifier
+                                                .height(0.dp)
+                                                .safeSemantics {
+                                                    contentDescription = closeMenuText
+                                                    role = Role.Button
+                                                },
+                                    )
+                                }
+                            }
+                        }
+                    },
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsTopHeight(WindowInsets.statusBars)
+                            .background(
+                                if (scrollBehavior.state.collapsedFraction > 0f || scrollBehavior.state.overlappedFraction > 0.01f) {
+                                    MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+                                } else {
+                                    MaterialTheme.colorScheme.background
+                                },
+                            ),
+                )
+            }
         },
         bottomBar = {
             if (viewState.podcastPlayerState.isVisible) {

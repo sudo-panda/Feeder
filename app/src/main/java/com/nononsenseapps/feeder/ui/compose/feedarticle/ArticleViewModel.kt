@@ -238,7 +238,8 @@ class ArticleViewModel(
                     if (isFullText) {
                         article?.wordCountFull ?: 0
                     } else {
-                        article?.wordCount ?: 0
+                        // Fork: a summary-only feed would otherwise show "1 min read" for long articles
+                        maxOf(article?.wordCount ?: 0, article?.wordCountFull ?: 0)
                     },
                 image = article?.image,
                 showSummarize = summarySettings.canSummarize && !article?.link.isNullOrEmpty(),

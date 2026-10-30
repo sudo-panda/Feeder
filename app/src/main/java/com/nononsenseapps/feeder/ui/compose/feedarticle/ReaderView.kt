@@ -340,7 +340,7 @@ internal fun sameImage(
 }
 
 private fun imageKey(url: String): String =
-    url
+    embeddedImageUrl(url)?.let { imageKey(it) } ?: url
         .substringBefore('#')
         .substringBefore('?')
         .trimEnd('/')
@@ -349,6 +349,15 @@ private fun imageKey(url: String): String =
         .substringBeforeLast('.')
         .lowercase()
         .replace(Regex("""(-\d+x\d+|@\d+(\.\d+)?x|-scaled)$"""), "")
+
+// Image CDNs such as NPR's put the original picture's address in a query parameter, e.g. "?url=https%3A%2F%2F..."
+private fun embeddedImageUrl(url: String): String? =
+    url
+        .substringAfter('?', "")
+        .substringBefore('#')
+        .split('&')
+        .map { runCatching { java.net.URLDecoder.decode(it.substringAfter('=', ""), "UTF-8") }.getOrDefault("") }
+        .firstOrNull { it.startsWith("http://") || it.startsWith("https://") }
 
 fun wordsToReadTimeSecs(words: Int): Int = (words * 60 / 220.0).roundToInt()
 

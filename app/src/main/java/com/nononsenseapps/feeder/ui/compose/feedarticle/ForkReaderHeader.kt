@@ -99,11 +99,12 @@ fun ForkReaderHeader(
         if (readTimeSecs > 0) {
             // Rounded up, so short articles show "1 min read"
             val minutes = (readTimeSecs + 59) / 60
-            pluralStringResource(R.plurals.fork_min_read, minutes, minutes)
+            // Non-breaking spaces keep "5 min read" on one line
+            pluralStringResource(R.plurals.fork_min_read, minutes, minutes).replace(' ', '\u00A0')
         } else {
             null
         }
-    val meta = listOfNotNull(authorDate, readTime).joinToString(" · ")
+    val meta = listOfNotNull(authorDate, readTime).joinToString("\u00A0· ")
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
