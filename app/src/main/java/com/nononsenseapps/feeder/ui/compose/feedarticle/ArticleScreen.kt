@@ -340,7 +340,8 @@ fun ArticleScreen(
                                 down = focusArticle
                             },
                     scrollBehavior = scrollBehavior,
-                    title = viewState.feedDisplayTitle,
+                    // Fork: the reader's header already shows the feed's name
+                    title = "",
                     navigationIcon = {
                         IconButton(onClick = onNavigateUp) {
                             Icon(

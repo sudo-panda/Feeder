@@ -154,6 +154,22 @@ fun ReaderView(
                             .width(dimens.maxReaderWidth),
                 )
 
+                // Fork: the buttons always sit right under the title, whether the picture comes from
+                // the feed or from the article itself
+                offsetCounter++
+                ForkReaderActionBar(
+                    saved = saved,
+                    onSaveClick = onSaveClick,
+                    onShare = onShare,
+                    onOpenInBrowser = onOpenInBrowser,
+                    isUnread = isUnread,
+                    onToggleRead = onMarkAsUnread,
+                    modifier =
+                        Modifier
+                            .width(dimens.maxReaderWidth)
+                            .bleed(bleed),
+                )
+
                 if (enclosure.present) {
                     offsetCounter++
                     run {
@@ -264,20 +280,6 @@ fun ReaderView(
                         }
                     }
                 }
-
-                offsetCounter++
-                ForkReaderActionBar(
-                    saved = saved,
-                    onSaveClick = onSaveClick,
-                    onShare = onShare,
-                    onOpenInBrowser = onOpenInBrowser,
-                    isUnread = isUnread,
-                    onToggleRead = onMarkAsUnread,
-                    modifier =
-                        Modifier
-                            .width(dimens.maxReaderWidth)
-                            .bleed(bleed),
-                )
 
                 CompositionLocalProvider(LocalReaderBleed provides bleed) {
                     articleBody(offsetCounter)
