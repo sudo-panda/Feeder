@@ -53,6 +53,8 @@ import coil3.size.Precision
 import coil3.size.Scale
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.ui.compose.feed.PlainTooltipBox
+import com.nononsenseapps.feeder.ui.compose.icons.CustomFilled
+import com.nononsenseapps.feeder.ui.compose.icons.TextToSpeech
 import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
 import com.nononsenseapps.feeder.ui.compose.theme.LocalReaderAppearance
 import com.nononsenseapps.feeder.ui.compose.utils.ProvideScaledText
@@ -167,6 +169,7 @@ fun ForkReaderActionBar(
     onSaveClick: () -> Unit,
     onShare: () -> Unit,
     onOpenInBrowser: () -> Unit,
+    onReadAloud: () -> Unit,
     isUnread: Boolean,
     onToggleRead: () -> Unit,
     modifier: Modifier = Modifier,
@@ -189,9 +192,10 @@ fun ForkReaderActionBar(
             ReaderAction(Icons.Outlined.Share, stringResource(R.string.share), onClick = onShare)
             ReaderAction(
                 Icons.Outlined.OpenInBrowser,
-                stringResource(R.string.open_article_in_default_browser),
+                stringResource(R.string.open_in_web_view),
                 onClick = onOpenInBrowser,
             )
+            ReaderAction(Icons.CustomFilled.TextToSpeech, stringResource(R.string.read_article), onClick = onReadAloud)
             // Shows what a tap does, like the icon behind a swiped card
             ReaderAction(
                 icon = if (isUnread) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,

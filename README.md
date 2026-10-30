@@ -20,8 +20,9 @@
 >   tiles, a custom colour (hue, shade or hex), or *Wallpaper* to keep Android 12+ dynamic
 >   colours.
 > - **Boost-style reader:** feed and author line, bold title, edge-to-edge images and an
->   icon bar (save, share, browser, unread). The **Aa** button opens *Reader
->   appearance*: title size, text size, line spacing, justify, edge-to-edge images and font.
+>   icon bar (save, share, open in browser, read aloud, read/unread). Fetch full article and
+>   *Reader appearance* are in the ⋮ menu; the appearance panel has title size, text size,
+>   line spacing, justify, edge-to-edge images and font.
 > - **Friendlier empty list:** "All caught up" with buttons to open another feed or add one.
 > - **Boost-style pull to refresh:** the circle only follows your finger; loading shows as a
 >   thin accent-coloured bar under the top bar.

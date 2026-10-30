@@ -87,6 +87,7 @@ fun ReaderView(
     articleScrollState: ScrollState = rememberScrollState(),
     onShare: () -> Unit = {},
     onOpenInBrowser: () -> Unit = {},
+    onReadAloud: () -> Unit = {},
     feedImageUrl: String? = null,
     articleBody: @Composable (indexOffset: Int) -> Unit,
 ) {
@@ -162,6 +163,7 @@ fun ReaderView(
                     onSaveClick = onSaveClick,
                     onShare = onShare,
                     onOpenInBrowser = onOpenInBrowser,
+                    onReadAloud = onReadAloud,
                     isUnread = isUnread,
                     onToggleRead = onMarkAsUnread,
                     modifier =

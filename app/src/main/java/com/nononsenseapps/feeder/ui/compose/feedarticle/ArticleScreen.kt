@@ -8,16 +8,12 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
@@ -32,7 +28,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material3.AlertDialog
@@ -86,8 +81,6 @@ import com.nononsenseapps.feeder.ui.compose.components.TranslationProgressConten
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
 import com.nononsenseapps.feeder.ui.compose.feed.PlainTooltipBox
 import com.nononsenseapps.feeder.ui.compose.html.ColumnArticleContent
-import com.nononsenseapps.feeder.ui.compose.icons.CustomFilled
-import com.nononsenseapps.feeder.ui.compose.icons.TextToSpeech
 import com.nononsenseapps.feeder.ui.compose.readaloud.HideableTTSPlayer
 import com.nononsenseapps.feeder.ui.compose.readaloud.SpeechFollowViewport
 import com.nononsenseapps.feeder.ui.compose.readaloud.SpeechHighlight
@@ -351,37 +344,8 @@ fun ArticleScreen(
                         }
                     },
                     actions = {
-                        PlainTooltipBox(tooltip = { Text(stringResource(R.string.fetch_full_article)) }) {
-                            IconButton(
-                                onClick = onToggleFullText,
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Article,
-                                    contentDescription = stringResource(R.string.fetch_full_article),
-                                )
-                            }
-                        }
-
-                        PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_in_web_view)) }) {
-                            IconButton(
-                                onClick = onOpenInCustomTab,
-                            ) {
-                                Icon(
-                                    Icons.Default.OpenInBrowser,
-                                    contentDescription = stringResource(id = R.string.open_in_web_view),
-                                )
-                            }
-                        }
-
-                        PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.reader_appearance)) }) {
-                            IconButton(onClick = { showAppearance = true }) {
-                                Icon(
-                                    Icons.Outlined.FormatSize,
-                                    contentDescription = stringResource(id = R.string.reader_appearance),
-                                )
-                            }
-                        }
-
+                        // Fork: fetch full article and reader appearance live in the menu, and the
+                        // action bar under the title opens the article in the browser
                         PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_menu)) }) {
                             Box {
                                 IconButton(
@@ -401,7 +365,38 @@ fun ArticleScreen(
                                                 onShowToolbarMenu(false)
                                             },
                                 ) {
-                                    // Fork: Share, Save and Mark as unread are in the reader's action bar
+                                    // Fork: Share, Save, Mark as unread, Open in browser and Read aloud are
+                                    // in the reader's action bar
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            onShowToolbarMenu(false)
+                                            onToggleFullText()
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.AutoMirrored.Filled.Article,
+                                                contentDescription = null,
+                                            )
+                                        },
+                                        text = {
+                                            Text(stringResource(id = R.string.fetch_full_article))
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        onClick = {
+                                            onShowToolbarMenu(false)
+                                            showAppearance = true
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                Icons.Outlined.FormatSize,
+                                                contentDescription = null,
+                                            )
+                                        },
+                                        text = {
+                                            Text(stringResource(id = R.string.reader_appearance))
+                                        },
+                                    )
                                     if (viewState.showSummarize) {
                                         DropdownMenuItem(
                                             onClick = {
@@ -449,21 +444,6 @@ fun ArticleScreen(
                                         )
                                     }
 
-                                    DropdownMenuItem(
-                                        onClick = {
-                                            onShowToolbarMenu(false)
-                                            ttsOnPlay()
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.CustomFilled.TextToSpeech,
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        text = {
-                                            Text(stringResource(id = R.string.read_article))
-                                        },
-                                    )
                                     // Hidden button for TalkBack
                                     DropdownMenuItem(
                                         onClick = {
@@ -549,62 +529,41 @@ fun ArticleScreen(
                 onBookmark = onToggleBookmark,
                 onMarkAsUnread = onMarkAsUnread,
                 onShare = onShare,
+                onReadAloud = ttsOnPlay,
                 modifier =
                     Modifier
-                        .focusGroup()
+                        .pagingTaps(
+                            enabled = isPagingMode,
+                            onPrevious = {
+                                val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
+                                val target = (articleScrollState.value - scrollAmount).coerceAtLeast(0)
+                                ttsOnUserScroll()
+                                coroutineScope.launch {
+                                    if (isAnimatedPaging) {
+                                        articleScrollState.animateScrollTo(target)
+                                    } else {
+                                        articleScrollState.scrollTo(target)
+                                    }
+                                }
+                            },
+                            onNext = {
+                                val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
+                                val target = (articleScrollState.value + scrollAmount).coerceAtMost(articleScrollState.maxValue)
+                                ttsOnUserScroll()
+                                coroutineScope.launch {
+                                    if (isAnimatedPaging) {
+                                        articleScrollState.animateScrollTo(target)
+                                    } else {
+                                        articleScrollState.scrollTo(target)
+                                    }
+                                }
+                            },
+                        ).focusGroup()
                         .focusRequester(focusArticle)
                         .focusProperties {
                             up = focusTopBar
                         },
             )
-
-            if (isPagingMode) {
-                Row(modifier = Modifier.matchParentSize()) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxHeight()
-                                .weight(0.2f)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                ) {
-                                    val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
-                                    val target = (articleScrollState.value - scrollAmount).coerceAtLeast(0)
-                                    ttsOnUserScroll()
-                                    coroutineScope.launch {
-                                        if (isAnimatedPaging) {
-                                            articleScrollState.animateScrollTo(target)
-                                        } else {
-                                            articleScrollState.scrollTo(target)
-                                        }
-                                    }
-                                },
-                    )
-                    Spacer(modifier = Modifier.weight(0.6f))
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxHeight()
-                                .weight(0.2f)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                ) {
-                                    val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
-                                    val target = (articleScrollState.value + scrollAmount).coerceAtMost(articleScrollState.maxValue)
-                                    ttsOnUserScroll()
-                                    coroutineScope.launch {
-                                        if (isAnimatedPaging) {
-                                            articleScrollState.animateScrollTo(target)
-                                        } else {
-                                            articleScrollState.scrollTo(target)
-                                        }
-                                    }
-                                },
-                    )
-                }
-            }
         }
     }
 
@@ -683,6 +642,7 @@ fun ArticleContent(
     speechHighlight: SpeechHighlight? = null,
     onUserScroll: (() -> Unit)? = null,
     onShare: () -> Unit = {},
+    onReadAloud: () -> Unit = {},
 ) {
     val toolbarColor = MaterialTheme.colorScheme.surface.toArgb()
 
@@ -745,7 +705,9 @@ fun ArticleContent(
         modifier = if (onUserScroll != null) modifier.stopSpeechFollowingOnAccessibilityScroll(articleScrollState, onUserScroll) else modifier,
         articleScrollState = articleScrollState,
         onShare = onShare,
-        onOpenInBrowser = { viewState.articleLink?.let { activityLauncher.openLinkInBrowser(link = it) } },
+        // Fork: the only open-in-browser button now, it does what the top bar's button did
+        onOpenInBrowser = onOpenInCustomTab,
+        onReadAloud = onReadAloud,
         feedImageUrl = feedImageUrl,
     ) { indexOffset ->
         var offsetCounter = indexOffset
