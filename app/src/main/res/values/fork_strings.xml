@@ -13,8 +13,6 @@
   <string name="empty_nothing_new">There\'s nothing new to read here.</string>
   <string name="empty_open_other_feed">Open another feed</string>
   <string name="empty_add_feed">Add a feed</string>
-  <string name="fork_browser">Browser</string>
-  <string name="fork_unread">Unread</string>
   <string name="reader_appearance">Reader appearance</string>
   <string name="title_size">Title size</string>
   <string name="line_spacing">Line spacing</string>

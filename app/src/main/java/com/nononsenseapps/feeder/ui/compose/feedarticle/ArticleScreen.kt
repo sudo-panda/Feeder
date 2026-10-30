@@ -170,7 +170,8 @@ fun ArticleScreen(
         viewState = viewState,
         onTextSettings = onNavigateToTextSettings,
         onToggleFullText = viewModel::toggleFullText,
-        onMarkAsUnread = viewModel::markAsUnread,
+        // Fork: the reader's read/unread button toggles
+        onMarkAsUnread = { if (viewState.isUnread) viewModel.markAsRead() else viewModel.markAsUnread() },
         onShare = {
             if (viewState.articleId > ID_UNSET) {
                 val intent =

@@ -272,7 +272,7 @@ fun ReaderView(
                     onShare = onShare,
                     onOpenInBrowser = onOpenInBrowser,
                     isUnread = isUnread,
-                    onMarkAsUnread = onMarkAsUnread,
+                    onToggleRead = onMarkAsUnread,
                     modifier =
                         Modifier
                             .width(dimens.maxReaderWidth)
@@ -320,7 +320,35 @@ internal fun shouldShowHeaderImage(
     showHeaderImage: Boolean,
     image: ThumbnailImage?,
     contentImageUrls: Set<String>,
-): Boolean = showHeaderImage && image?.fromBody == false && image.url !in contentImageUrls
+): Boolean =
+    showHeaderImage &&
+        image?.fromBody == false &&
+        image.url !in contentImageUrls &&
+        // Fork: also hide it when the article shows a resized or re-hosted copy of the same picture
+        contentImageUrls.none { sameImage(it, image.url) }
+
+/**
+ * Fork: whether two image URLs most likely point to the same picture, ignoring the host, query,
+ * extension and size suffixes such as "-1024x576" or "@2x".
+ */
+internal fun sameImage(
+    a: String,
+    b: String,
+): Boolean {
+    val keyA = imageKey(a)
+    return keyA.length >= 6 && keyA == imageKey(b)
+}
+
+private fun imageKey(url: String): String =
+    url
+        .substringBefore('#')
+        .substringBefore('?')
+        .trimEnd('/')
+        .substringAfterLast('/')
+        .let { runCatching { java.net.URLDecoder.decode(it, "UTF-8") }.getOrDefault(it) }
+        .substringBeforeLast('.')
+        .lowercase()
+        .replace(Regex("""(-\d+x\d+|@\d+(\.\d+)?x|-scaled)$"""), "")
 
 fun wordsToReadTimeSecs(words: Int): Int = (words * 60 / 220.0).roundToInt()
 

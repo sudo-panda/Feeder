@@ -470,6 +470,13 @@ class ArticleViewModel(
         }
     }
 
+    // Fork: the reader's read/unread button toggles
+    fun markAsRead() {
+        applicationCoroutineScope.launch {
+            repository.markAsReadAndNotified(itemId)
+        }
+    }
+
     fun setBookmarked(bookmarked: Boolean) =
         applicationCoroutineScope.launch {
             repository.setBookmarked(itemId, bookmarked)

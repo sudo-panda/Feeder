@@ -52,6 +52,7 @@ import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
 import com.nononsenseapps.feeder.R
+import com.nononsenseapps.feeder.ui.compose.feed.PlainTooltipBox
 import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
 import com.nononsenseapps.feeder.ui.compose.theme.LocalReaderAppearance
 import com.nononsenseapps.feeder.ui.compose.utils.ProvideScaledText
@@ -166,7 +167,7 @@ fun ForkReaderActionBar(
     onShare: () -> Unit,
     onOpenInBrowser: () -> Unit,
     isUnread: Boolean,
-    onMarkAsUnread: () -> Unit,
+    onToggleRead: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -185,13 +186,16 @@ fun ForkReaderActionBar(
                 onClick = onSaveClick,
             )
             ReaderAction(Icons.Outlined.Share, stringResource(R.string.share), onClick = onShare)
-            ReaderAction(Icons.Outlined.OpenInBrowser, stringResource(R.string.fork_browser), onClick = onOpenInBrowser)
             ReaderAction(
-                icon = if (isUnread) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                label = stringResource(R.string.fork_unread),
-                highlighted = isUnread,
-                // Opening an article marks it as read, so this only goes one way, like the old chip
-                onClick = { if (!isUnread) onMarkAsUnread() },
+                Icons.Outlined.OpenInBrowser,
+                stringResource(R.string.open_article_in_default_browser),
+                onClick = onOpenInBrowser,
+            )
+            // Shows what a tap does, like the icon behind a swiped card
+            ReaderAction(
+                icon = if (isUnread) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                label = stringResource(if (isUnread) R.string.mark_as_read else R.string.mark_as_unread),
+                onClick = onToggleRead,
             )
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -206,8 +210,11 @@ private fun ReaderAction(
     highlighted: Boolean = false,
 ) {
     val color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    IconButton(onClick = onClick) {
-        Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(22.dp))
+    // Long press shows the label
+    PlainTooltipBox(tooltip = { Text(label) }) {
+        IconButton(onClick = onClick) {
+            Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(22.dp))
+        }
     }
 }
 
