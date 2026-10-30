@@ -47,6 +47,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -62,6 +63,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -324,12 +326,18 @@ fun ArticleScreen(
 
     val closeMenuText = stringResource(id = R.string.close_menu)
 
+    // Fork: show the article's title in the top bar once its header has scrolled away
+    val headerHeightPx = with(LocalDensity.current) { 180.dp.toPx() }
+    val showTitleInBar by remember { derivedStateOf { articleScrollState.value > headerHeightPx } }
+
     Scaffold(
         modifier =
             modifier
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
         contentWindowInsets = WindowInsets.statusBars,
+        // Fork: the reader is a white page (dark grey, or black, at night), like a Boost post
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             // Fork: keeps the status bar covered once the top bar has scrolled away
             Box {
@@ -342,8 +350,10 @@ fun ArticleScreen(
                                 down = focusArticle
                             },
                     scrollBehavior = scrollBehavior,
-                    // Fork: the reader's header already shows the feed's name
-                    title = "",
+                    // Fork: the header shows the feed's name, the bar shows the title once scrolled
+                    title = if (showTitleInBar) viewState.articleTitle else "",
+                    titleStyle = MaterialTheme.typography.titleMedium,
+                    containerColor = MaterialTheme.colorScheme.surface,
                     navigationIcon = {
                         IconButton(onClick = onNavigateUp) {
                             Icon(
@@ -481,7 +491,7 @@ fun ArticleScreen(
                                 if (scrollBehavior.state.collapsedFraction > 0f || scrollBehavior.state.overlappedFraction > 0.01f) {
                                     MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                                 } else {
-                                    MaterialTheme.colorScheme.background
+                                    MaterialTheme.colorScheme.surface
                                 },
                             ),
                 )

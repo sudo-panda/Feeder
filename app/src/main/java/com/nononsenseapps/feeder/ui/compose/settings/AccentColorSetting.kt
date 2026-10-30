@@ -235,7 +235,7 @@ private fun CustomAccentDialog(
     var hue by remember { mutableFloatStateOf(hsl[0]) }
     // Greys make poor accents, so start the custom colour with some saturation
     var saturation by remember { mutableFloatStateOf(hsl[1].coerceAtLeast(0.5f)) }
-    var lightness by remember { mutableFloatStateOf(hsl[2].coerceIn(0.2f, 0.8f)) }
+    var lightness by remember { mutableFloatStateOf(hsl[2].coerceIn(SHADE_RANGE)) }
     val accent = AccentColor.Rgb(ColorUtils.HSLToColor(floatArrayOf(hue, saturation, lightness)) and 0xFFFFFF)
     var hexText by remember { mutableStateOf(accent.toHex()) }
 
@@ -263,46 +263,29 @@ private fun CustomAccentDialog(
             val shown = accentColorFromHex(hexText) ?: accent
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // As used in the light and the dark themes
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.size(48.dp).background(shown.light(), CircleShape))
-                    Box(Modifier.size(48.dp).background(shown.dark(), CircleShape))
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    LabelledSwatch(shown.light(), stringResource(R.string.accent_light))
+                    LabelledSwatch(shown.dark(), stringResource(R.string.accent_dark))
                 }
                 Text(stringResource(R.string.accent_hue), style = MaterialTheme.typography.labelLarge)
-                Box(contentAlignment = Alignment.Center) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp)
-                            .height(12.dp)
-                            .background(
-                                Brush.horizontalGradient(
-                                    (0..6).map { Color.hsl(it * 60f % 360f, saturation, lightness) },
-                                ),
-                                RoundedCornerShape(6.dp),
-                            ),
-                    )
-                    Slider(
-                        value = hue,
-                        onValueChange = { setFromSliders(newHue = it) },
-                        valueRange = 0f..360f,
-                        colors =
-                            SliderDefaults.colors(
-                                thumbColor = Color(accent.rgb or 0xFF000000.toInt()),
-                                activeTrackColor = Color.Transparent,
-                                inactiveTrackColor = Color.Transparent,
-                            ),
-                    )
-                }
+                GradientSlider(
+                    value = hue,
+                    onValueChange = { setFromSliders(newHue = it) },
+                    valueRange = 0f..360f,
+                    brush = Brush.horizontalGradient((0..6).map { Color.hsl(it * 60f % 360f, saturation, lightness) }),
+                    thumbColor = Color(accent.rgb or 0xFF000000.toInt()),
+                )
                 Text(stringResource(R.string.accent_shade), style = MaterialTheme.typography.labelLarge)
-                Slider(
+                // Only shades that change the result: lighter ones are darkened again to stay readable
+                GradientSlider(
                     value = lightness,
                     onValueChange = { setFromSliders(newLightness = it) },
-                    valueRange = 0.2f..0.8f,
-                    colors =
-                        SliderDefaults.colors(
-                            thumbColor = Color(accent.rgb or 0xFF000000.toInt()),
-                            activeTrackColor = Color(accent.rgb or 0xFF000000.toInt()),
+                    valueRange = SHADE_RANGE,
+                    brush =
+                        Brush.horizontalGradient(
+                            listOf(SHADE_RANGE.start, SHADE_RANGE.endInclusive).map { Color.hsl(hue, saturation, it) },
                         ),
+                    thumbColor = Color(accent.rgb or 0xFF000000.toInt()),
                 )
                 OutlinedTextField(
                     value = hexText,
@@ -324,4 +307,50 @@ private fun CustomAccentDialog(
             }
         },
     )
+}
+
+private val SHADE_RANGE = 0.2f..0.5f
+
+@Composable
+private fun LabelledSwatch(
+    color: Color,
+    label: String,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.size(44.dp).background(color, CircleShape))
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+// A slider drawn on a colour gradient, so Hue and Shade look alike
+@Composable
+private fun GradientSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    brush: Brush,
+    thumbColor: Color,
+) {
+    Box(contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp)
+                .height(12.dp)
+                .background(brush, RoundedCornerShape(6.dp)),
+        )
+        Slider(
+            value = value.coerceIn(valueRange),
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            colors =
+                SliderDefaults.colors(
+                    thumbColor = thumbColor,
+                    activeTrackColor = Color.Transparent,
+                    inactiveTrackColor = Color.Transparent,
+                    activeTickColor = Color.Transparent,
+                    inactiveTickColor = Color.Transparent,
+                ),
+        )
+    }
 }

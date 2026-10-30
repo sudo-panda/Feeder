@@ -1,15 +1,12 @@
 package com.nononsenseapps.feeder.ui.compose.feedarticle
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.MarkEmailRead
@@ -19,28 +16,18 @@ import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -48,12 +35,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.size.Precision
-import coil3.size.Scale
 import com.nononsenseapps.feeder.R
-import com.nononsenseapps.feeder.ui.compose.feed.PlainTooltipBox
+import com.nononsenseapps.feeder.ui.compose.components.FeedAvatar
+import com.nononsenseapps.feeder.ui.compose.components.ForkActionButton
 import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
 import com.nononsenseapps.feeder.ui.compose.theme.LocalReaderAppearance
 import com.nononsenseapps.feeder.ui.compose.utils.ProvideScaledText
@@ -122,7 +106,7 @@ fun ForkReaderHeader(
                         contentDescription = goToFeedLabel
                     },
         ) {
-            FeedAvatar(feedTitle = feedTitle, feedImageUrl = feedImageUrl)
+            FeedAvatar(feedTitle = feedTitle, imageUrl = feedImageUrl, size = 36.dp)
             Column {
                 WithBidiDeterminedLayoutDirection(paragraph = feedTitle) {
                     Text(
@@ -172,94 +156,36 @@ fun ForkReaderActionBar(
     isUnread: Boolean,
     onToggleRead: () -> Unit,
     modifier: Modifier = Modifier,
+    // Lines the first icon up with the text: the 22dp icon sits 13dp inside its 48dp button
+    startPadding: Dp = 0.dp,
 ) {
+    // Same buttons, size and alignment as the feed cards' action bar
     Column(modifier = modifier) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Row(
-            horizontalArrangement = Arrangement.SpaceEvenly,
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                    .padding(start = startPadding),
         ) {
-            ReaderAction(
+            ForkActionButton(
                 icon = if (saved) Icons.Filled.Star else Icons.Outlined.StarBorder,
                 label = stringResource(if (saved) R.string.saved_adjective else R.string.save_article),
                 highlighted = saved,
                 onClick = onSaveClick,
             )
-            ReaderAction(Icons.Outlined.Share, stringResource(R.string.share), onClick = onShare)
-            ReaderAction(
+            ForkActionButton(Icons.Outlined.Share, stringResource(R.string.share), onClick = onShare)
+            ForkActionButton(
                 Icons.Outlined.OpenInBrowser,
                 stringResource(R.string.open_in_web_view),
                 onClick = onOpenInBrowser,
             )
-            ReaderAction(Icons.Outlined.RecordVoiceOver, stringResource(R.string.read_article), onClick = onReadAloud)
+            ForkActionButton(Icons.Outlined.RecordVoiceOver, stringResource(R.string.read_article), onClick = onReadAloud)
             // Shows what a tap does, like the icon behind a swiped card
-            ReaderAction(
+            ForkActionButton(
                 icon = if (isUnread) Icons.Outlined.MarkEmailRead else Icons.Outlined.MarkEmailUnread,
                 label = stringResource(if (isUnread) R.string.mark_as_read else R.string.mark_as_unread),
                 onClick = onToggleRead,
-            )
-        }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    }
-}
-
-@Composable
-private fun ReaderAction(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    highlighted: Boolean = false,
-) {
-    val color = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    // Long press shows the label
-    PlainTooltipBox(tooltip = { Text(label) }) {
-        IconButton(onClick = onClick) {
-            Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(22.dp))
-        }
-    }
-}
-
-// The feed's icon, as in the feed list and the drawer, or its first letter while loading or without one
-@Composable
-private fun FeedAvatar(
-    feedTitle: String,
-    feedImageUrl: String?,
-) {
-    var loaded by remember(feedImageUrl) { mutableStateOf(false) }
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier =
-            Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(if (loaded) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.primary),
-    ) {
-        if (!loaded) {
-            Text(
-                text = feedTitle.trim().take(1).uppercase(),
-                color = MaterialTheme.colorScheme.onPrimary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clearAndSetSemantics { },
-            )
-        }
-        if (feedImageUrl != null) {
-            val pixels = with(LocalDensity.current) { 36.dp.roundToPx() }
-            AsyncImage(
-                model =
-                    ImageRequest
-                        .Builder(LocalContext.current)
-                        .data(feedImageUrl)
-                        .scale(Scale.FILL)
-                        .size(pixels)
-                        .precision(Precision.INEXACT)
-                        .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                onSuccess = { loaded = true },
-                modifier = Modifier.size(36.dp),
             )
         }
     }

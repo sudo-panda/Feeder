@@ -21,11 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.DynamicFeed
-import androidx.compose.material.icons.outlined.RssFeed
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -45,10 +43,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -69,22 +65,17 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.size.Precision
-import coil3.size.Scale
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.db.room.ID_ALL_FEEDS
 import com.nononsenseapps.feeder.db.room.ID_SAVED_ARTICLES
 import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.model.FeedUnreadCount
-import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
+import com.nononsenseapps.feeder.ui.compose.components.FeedAvatar
 import com.nononsenseapps.feeder.ui.compose.material3.DismissibleDrawerSheet
 import com.nononsenseapps.feeder.ui.compose.material3.DismissibleNavigationDrawer
 import com.nononsenseapps.feeder.ui.compose.material3.DrawerState
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.utils.onKeyEventLikeEscape
-import com.nononsenseapps.feeder.util.logDebug
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
@@ -248,7 +239,7 @@ fun ListOfFeedsAndTags(
                             unreadCount = item.unreadCount,
                             selected = item.isSelected(),
                             onClick = { onItemClick(item) },
-                            leading = { FeedIcon(imageUrl = item.imageUrl?.toString()) },
+                            leading = { FeedAvatar(feedTitle = item.displayTitle, imageUrl = item.imageUrl?.toString(), size = 24.dp) },
                             modifier =
                                 if (item.contentType == ContentType.ChildFeed) {
                                     Modifier.padding(start = 16.dp)
@@ -421,38 +412,6 @@ private fun TagRow(
 }
 
 @Composable
-private fun FeedIcon(imageUrl: String?) {
-    val fallback = rememberTintedVectorPainter(Icons.Outlined.RssFeed)
-    if (imageUrl == null) {
-        Icon(Icons.Outlined.RssFeed, contentDescription = null, modifier = Modifier.size(22.dp))
-        return
-    }
-    val pixels = with(LocalDensity.current) { 22.dp.roundToPx() }
-    AsyncImage(
-        model =
-            ImageRequest
-                .Builder(LocalContext.current)
-                .data(imageUrl)
-                .listener(
-                    onError = { a, b ->
-                        logDebug("FEEDER_DRAWER", "error ${a.data}", b.throwable)
-                    },
-                ).scale(Scale.FIT)
-                .size(pixels)
-                .precision(Precision.INEXACT)
-                .build(),
-        placeholder = fallback,
-        error = fallback,
-        contentDescription = stringResource(id = R.string.feed_icon),
-        contentScale = ContentScale.Crop,
-        modifier =
-            Modifier
-                .size(22.dp)
-                .clip(RoundedCornerShape(6.dp)),
-    )
-}
-
-@Composable
 private fun Placeholder() {
     Box(
         modifier =
@@ -480,7 +439,7 @@ private fun DrawerRowsPreview() {
                 unreadCount = 0,
                 selected = false,
                 onClick = {},
-                leading = { FeedIcon(imageUrl = null) },
+                leading = { FeedAvatar(feedTitle = "A feed", imageUrl = null, size = 24.dp) },
                 modifier = Modifier.padding(start = 16.dp),
             )
         }
