@@ -471,6 +471,9 @@ class ArticleViewModel(
         }
     }
 
+    // Fork: the article to open when swiping, see ArticleSwipeBox
+    suspend fun adjacentArticleId(next: Boolean): Long? = repository.getAdjacentArticleId(itemId, next)
+
     // Fork: the reader's read/unread button toggles
     fun markAsRead() {
         applicationCoroutineScope.launch {

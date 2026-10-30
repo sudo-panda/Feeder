@@ -57,6 +57,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
@@ -706,6 +708,13 @@ fun LinearTextContent(
                 // Fork: Android breaks justified lines with the style's letter spacing but draws them
                 // without it, so every line ends short and the right margin looks wider than the left
                 letterSpacing = if (typographySettings.justifyText) 0.sp else TextUnit.Unspecified,
+                // Fork: hyphenate justified text so lines don't get large gaps between words
+                style =
+                    if (typographySettings.justifyText) {
+                        LocalTextStyle.current.merge(TextStyle(hyphens = Hyphens.Auto, lineBreak = LineBreak.Paragraph))
+                    } else {
+                        LocalTextStyle.current
+                    },
                 textAlign =
                     if (typographySettings.justifyText) {
                         TextAlign.Justify

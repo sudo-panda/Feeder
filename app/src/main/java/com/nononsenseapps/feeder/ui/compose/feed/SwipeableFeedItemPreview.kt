@@ -17,8 +17,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.MarkEmailRead
+import androidx.compose.material.icons.outlined.MarkEmailUnread
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -264,9 +264,10 @@ fun SwipeableFeedItemPreview(
                     }.padding(horizontal = 24.dp),
         ) {
             Icon(
+                // Fork: same envelope icons as the reader's read/unread button
                 when (item.unread) {
-                    true -> Icons.Default.VisibilityOff
-                    false -> Icons.Default.Visibility
+                    true -> Icons.Outlined.MarkEmailRead
+                    false -> Icons.Outlined.MarkEmailUnread
                 },
                 contentDescription = null,
             )

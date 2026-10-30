@@ -42,7 +42,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -114,8 +113,7 @@ fun FeedItemCard(
         Column(
             modifier =
                 Modifier
-                    .requiredHeightIn(min = minimumTouchSize)
-                    .alpha(if (!item.unread) 0.75f else 1.0f),
+                    .requiredHeightIn(min = minimumTouchSize),
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -127,6 +125,8 @@ fun FeedItemCard(
                             text = item.title,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = if (item.unread) FontWeight.Bold else FontWeight.Normal,
+                            // Like Boost, only the title shows that an article was read
+                            color = if (item.unread) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = maxLines,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth(),
@@ -260,7 +260,7 @@ private fun FeedItemCardMetaLine(
 }
 
 // Fork: Boost-style quick actions at the bottom of each card
-internal val FeedItemCardActionsHeight = 44.dp
+internal val FeedItemCardActionsHeight = 48.dp
 
 @Composable
 private fun FeedItemCardActions(

@@ -12,11 +12,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.MarkEmailRead
+import androidx.compose.material.icons.outlined.MarkEmailUnread
 import androidx.compose.material.icons.outlined.OpenInBrowser
+import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,8 +54,6 @@ import coil3.size.Precision
 import coil3.size.Scale
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.ui.compose.feed.PlainTooltipBox
-import com.nononsenseapps.feeder.ui.compose.icons.CustomFilled
-import com.nononsenseapps.feeder.ui.compose.icons.TextToSpeech
 import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
 import com.nononsenseapps.feeder.ui.compose.theme.LocalReaderAppearance
 import com.nononsenseapps.feeder.ui.compose.utils.ProvideScaledText
@@ -195,10 +194,10 @@ fun ForkReaderActionBar(
                 stringResource(R.string.open_in_web_view),
                 onClick = onOpenInBrowser,
             )
-            ReaderAction(Icons.CustomFilled.TextToSpeech, stringResource(R.string.read_article), onClick = onReadAloud)
+            ReaderAction(Icons.Outlined.RecordVoiceOver, stringResource(R.string.read_article), onClick = onReadAloud)
             // Shows what a tap does, like the icon behind a swiped card
             ReaderAction(
-                icon = if (isUnread) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                icon = if (isUnread) Icons.Outlined.MarkEmailRead else Icons.Outlined.MarkEmailUnread,
                 label = stringResource(if (isUnread) R.string.mark_as_read else R.string.mark_as_unread),
                 onClick = onToggleRead,
             )

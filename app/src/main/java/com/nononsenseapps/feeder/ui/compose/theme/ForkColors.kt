@@ -5,26 +5,42 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 import com.nononsenseapps.feeder.archmodel.AccentColor
 
 // Fork: Boost-style colours. Neutral grey surfaces with one accent colour.
 
-// Light theme: dark enough to read on white
-fun AccentColor.Rgb.light(): Color = withLightness { minOf(it, 0.5f) }
+// Light theme: dark enough to read as text on the grey background (WCAG AA, 4.5:1)
+fun AccentColor.Rgb.light(): Color = withReadableLightness(against = Color(0xFFEDEDED), step = -0.02f) { minOf(it, 0.5f) }
 
-// Dark themes: a lighter shade so the accent stays readable on dark surfaces
-fun AccentColor.Rgb.dark(): Color = withLightness { maxOf(it, 0.68f) }
+// Dark themes: light enough to read as text on dark grey cards, which also passes on black
+fun AccentColor.Rgb.dark(): Color = withReadableLightness(against = Color(0xFF1E1E1E), step = 0.02f) { maxOf(it, 0.68f) }
 
-private fun AccentColor.Rgb.withLightness(lightness: (Float) -> Float): Color {
+private fun AccentColor.Rgb.withReadableLightness(
+    against: Color,
+    step: Float,
+    start: (Float) -> Float,
+): Color {
     val hsl = FloatArray(3)
     ColorUtils.colorToHSL(rgb or 0xFF000000.toInt(), hsl)
-    hsl[2] = lightness(hsl[2])
+    hsl[2] = start(hsl[2])
+    // Bright hues like amber or lime need more than the starting lightness to reach the contrast
+    while (hsl[2] in 0.02f..0.98f && ColorUtils.calculateContrast(ColorUtils.HSLToColor(hsl), against.toArgb()) < 4.5) {
+        hsl[2] += step
+    }
     return Color(ColorUtils.HSLToColor(hsl))
 }
 
-private fun onAccent(accent: Color): Color = if (accent.luminance() > 0.4f) Color(0xFF111111) else Color.White
+// White or near-black, whichever reads better on the accent
+private fun onAccent(accent: Color): Color {
+    val dark = Color(0xFF111111)
+    return if (ColorUtils.calculateContrast(Color.White.toArgb(), accent.toArgb()) >= ColorUtils.calculateContrast(dark.toArgb(), accent.toArgb())) {
+        Color.White
+    } else {
+        dark
+    }
+}
 
 fun forkColorScheme(
     accentColor: AccentColor.Rgb,

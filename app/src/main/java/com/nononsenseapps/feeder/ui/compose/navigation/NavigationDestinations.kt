@@ -490,6 +490,11 @@ data object ArticleDestination : NavigationDestination(
             mainActivityViewModel = mainActivityViewModel,
             onNavigateToArticle = { ArticleDestination.navigate(navController, it) },
             onNavigateToTextSettings = { TextSettingsDestination.navigate(navController) },
+            // Fork: swiping replaces the article, so Back still returns to the feed list
+            onSwipeToArticle = { id ->
+                navController.popBackStack()
+                ArticleDestination.navigate(navController, id)
+            },
         )
     }
 }

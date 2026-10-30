@@ -21,4 +21,6 @@
     <item quantity="one">%d min read</item>
     <item quantity="other">%d min read</item>
   </plurals>
+  <string name="accent_tiles_hint_wallpaper">First tile: your wallpaper\'s colors. Last tile: a custom color.</string>
+  <string name="accent_tiles_hint">Last tile: a custom color.</string>
 </resources>

@@ -23,6 +23,8 @@
 >   icon bar (save, share, open in browser, read aloud, read/unread). Fetch full article and
 >   *Reader appearance* are in the ⋮ menu; the appearance panel has title size, text size,
 >   line spacing, justify, edge-to-edge images and font.
+> - **Swipe between articles:** in the reader, swipe left for the next article and right for
+>   the previous one, in the order of the list you opened it from.
 > - **Friendlier empty list:** "All caught up" with buttons to open another feed or add one.
 > - **Boost-style pull to refresh:** the circle only follows your finger; loading shows as a
 >   thin accent-coloured bar under the top bar.

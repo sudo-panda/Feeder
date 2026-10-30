@@ -71,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.archmodel.Repository
 import com.nononsenseapps.feeder.archmodel.TextToDisplay
+import com.nononsenseapps.feeder.archmodel.formatForFeed
 import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.localtranslation.BergamotModelDownloadProgress
 import com.nononsenseapps.feeder.model.LocaleOverride
@@ -114,6 +115,7 @@ fun ArticleScreen(
     modifier: Modifier = Modifier,
     onNavigateToArticle: (Long) -> Unit = {},
     onNavigateToTextSettings: () -> Unit = {},
+    onSwipeToArticle: (Long) -> Unit = onNavigateToArticle,
 ) {
     BackHandler(onBack = onNavigateUp)
     val di = LocalDI.current
@@ -165,6 +167,12 @@ fun ArticleScreen(
     ArticleScreen(
         viewState = viewState,
         onTextSettings = onNavigateToTextSettings,
+        onSwipeArticle = { next ->
+            viewModel.adjacentArticleId(next)?.let { id ->
+                onSwipeToArticle(id)
+                true
+            } ?: false
+        },
         onToggleFullText = viewModel::toggleFullText,
         // Fork: the reader's read/unread button toggles
         onMarkAsUnread = { if (viewState.isUnread) viewModel.markAsRead() else viewModel.markAsUnread() },
@@ -290,6 +298,7 @@ fun ArticleScreen(
     isPagingMode: Boolean = false,
     isAnimatedPaging: Boolean = false,
     onTextSettings: () -> Unit = {},
+    onSwipeArticle: suspend (next: Boolean) -> Boolean = { false },
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -517,53 +526,56 @@ fun ArticleScreen(
                     .stopSpeechFollowingOnUserScroll(ttsOnUserScroll),
         ) {
             val coroutineScope = rememberCoroutineScope()
-            ArticleContent(
-                viewState = viewState,
-                screenType = ScreenType.SINGLE,
-                speechHighlight = speechHighlight,
-                articleScrollState = articleScrollState,
-                onUserScroll = ttsOnUserScroll,
-                onFeedTitleClick = onFeedTitleClick,
-                onOpenAudioPlayer = onOpenAudioPlayer,
-                onOpenInCustomTab = onOpenInCustomTab,
-                onBookmark = onToggleBookmark,
-                onMarkAsUnread = onMarkAsUnread,
-                onShare = onShare,
-                onReadAloud = ttsOnPlay,
-                modifier =
-                    Modifier
-                        .pagingTaps(
-                            enabled = isPagingMode,
-                            onPrevious = {
-                                val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
-                                val target = (articleScrollState.value - scrollAmount).coerceAtLeast(0)
-                                ttsOnUserScroll()
-                                coroutineScope.launch {
-                                    if (isAnimatedPaging) {
-                                        articleScrollState.animateScrollTo(target)
-                                    } else {
-                                        articleScrollState.scrollTo(target)
+            // Fork: swipe left or right for the next or previous article
+            ArticleSwipeBox(onSwipe = onSwipeArticle) {
+                ArticleContent(
+                    viewState = viewState,
+                    screenType = ScreenType.SINGLE,
+                    speechHighlight = speechHighlight,
+                    articleScrollState = articleScrollState,
+                    onUserScroll = ttsOnUserScroll,
+                    onFeedTitleClick = onFeedTitleClick,
+                    onOpenAudioPlayer = onOpenAudioPlayer,
+                    onOpenInCustomTab = onOpenInCustomTab,
+                    onBookmark = onToggleBookmark,
+                    onMarkAsUnread = onMarkAsUnread,
+                    onShare = onShare,
+                    onReadAloud = ttsOnPlay,
+                    modifier =
+                        Modifier
+                            .pagingTaps(
+                                enabled = isPagingMode,
+                                onPrevious = {
+                                    val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
+                                    val target = (articleScrollState.value - scrollAmount).coerceAtLeast(0)
+                                    ttsOnUserScroll()
+                                    coroutineScope.launch {
+                                        if (isAnimatedPaging) {
+                                            articleScrollState.animateScrollTo(target)
+                                        } else {
+                                            articleScrollState.scrollTo(target)
+                                        }
                                     }
-                                }
-                            },
-                            onNext = {
-                                val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
-                                val target = (articleScrollState.value + scrollAmount).coerceAtMost(articleScrollState.maxValue)
-                                ttsOnUserScroll()
-                                coroutineScope.launch {
-                                    if (isAnimatedPaging) {
-                                        articleScrollState.animateScrollTo(target)
-                                    } else {
-                                        articleScrollState.scrollTo(target)
+                                },
+                                onNext = {
+                                    val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
+                                    val target = (articleScrollState.value + scrollAmount).coerceAtMost(articleScrollState.maxValue)
+                                    ttsOnUserScroll()
+                                    coroutineScope.launch {
+                                        if (isAnimatedPaging) {
+                                            articleScrollState.animateScrollTo(target)
+                                        } else {
+                                            articleScrollState.scrollTo(target)
+                                        }
                                     }
-                                }
+                                },
+                            ).focusGroup()
+                            .focusRequester(focusArticle)
+                            .focusProperties {
+                                up = focusTopBar
                             },
-                        ).focusGroup()
-                        .focusRequester(focusArticle)
-                        .focusProperties {
-                            up = focusTopBar
-                        },
-            )
+                )
+            }
         }
     }
 
@@ -680,25 +692,12 @@ fun ArticleContent(
         onSaveClick = onBookmark,
         isUnread = viewState.isUnread,
         onMarkAsUnread = onMarkAsUnread,
+        // Fork: short "author · date" like the feed cards, instead of "by …, Friday, 30 October …"
         authorDate =
-            when {
-                viewState.author == null && viewState.pubDate != null ->
-                    stringResource(
-                        R.string.on_date,
-                        formatArticleDate(context, viewState.pubDate),
-                    )
-
-                viewState.author != null && viewState.pubDate != null ->
-                    stringResource(
-                        R.string.by_author_on_date,
-                        // Must wrap author in Unicode marks to ensure it formats
-                        // correctly in RTL
-                        context.unicodeWrap(viewState.author ?: ""),
-                        formatArticleDate(context, viewState.pubDate),
-                    )
-
-                else -> null
-            },
+            listOfNotNull(
+                viewState.author?.takeIf { it.isNotBlank() }?.let { context.unicodeWrap(it) },
+                viewState.pubDate.formatForFeed(context).takeIf { it.isNotBlank() },
+            ).joinToString(" · ").takeIf { it.isNotEmpty() },
         image = viewState.image,
         showHeaderImage = viewState.textToDisplay == TextToDisplay.CONTENT,
         contentImageUrls = contentImageUrls,

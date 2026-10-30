@@ -209,6 +209,17 @@ private fun AccentTilesDialog(
                         }
                     }
                 }
+                // The first and last tiles have icons, not colours, so say what they do
+                Text(
+                    text =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            stringResource(R.string.accent_tiles_hint_wallpaper)
+                        } else {
+                            stringResource(R.string.accent_tiles_hint)
+                        },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         },
     )
