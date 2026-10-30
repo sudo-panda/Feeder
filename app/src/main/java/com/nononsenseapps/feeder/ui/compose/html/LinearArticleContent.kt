@@ -62,7 +62,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Precision
@@ -701,6 +703,9 @@ fun LinearTextContent(
                         }
                 },
                 softWrap = softWrap,
+                // Fork: Android breaks justified lines with the style's letter spacing but draws them
+                // without it, so every line ends short and the right margin looks wider than the left
+                letterSpacing = if (typographySettings.justifyText) 0.sp else TextUnit.Unspecified,
                 textAlign =
                     if (typographySettings.justifyText) {
                         TextAlign.Justify
