@@ -49,17 +49,24 @@ fun ArticleSwipeBox(
                         val next = offset.value < 0
                         val far = abs(offset.value) > width * 0.25f
                         val flung = abs(velocity) > 1500f && (velocity < 0) == next && abs(offset.value) > width * 0.05f
-                        if ((far || flung) && currentOnSwipe(next)) {
-                            offset.animateTo(if (next) -width.toFloat() else width.toFloat())
-                        } else {
+                        // On success the screen change slides this page the rest of the way out while the
+                        // next one slides in beside it, so it stays where the finger left it
+                        if (!((far || flung) && currentOnSwipe(next))) {
                             offset.animateTo(0f)
                         }
                     },
                 ).graphicsLayer {
                     translationX = offset.value
-                    alpha = 1f - (abs(offset.value) / width).coerceIn(0f, 1f) * 0.5f
                 },
     ) {
         content()
     }
+}
+
+/**
+ * Which way the last article swipe went (1 = next, -1 = previous), so the screen change can slide
+ * sideways. Reset once the new article is showing, so other navigation keeps its fade.
+ */
+object ArticleSwipeDirection {
+    var current: Int = 0
 }

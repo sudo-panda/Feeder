@@ -96,6 +96,7 @@ import com.nononsenseapps.feeder.ui.compose.utils.onKeyEventLikeEscape
 import com.nononsenseapps.feeder.util.ActivityLauncher
 import com.nononsenseapps.feeder.util.stripTrackingParameters
 import com.nononsenseapps.feeder.util.unicodeWrap
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
@@ -117,7 +118,7 @@ fun ArticleScreen(
     modifier: Modifier = Modifier,
     onNavigateToArticle: (Long) -> Unit = {},
     onNavigateToTextSettings: () -> Unit = {},
-    onSwipeToArticle: (Long) -> Unit = onNavigateToArticle,
+    onSwipeToArticle: (id: Long, next: Boolean) -> Unit = { id, _ -> onNavigateToArticle(id) },
 ) {
     BackHandler(onBack = onNavigateUp)
     val di = LocalDI.current
@@ -131,6 +132,12 @@ fun ArticleScreen(
     val isAnimatedPaging by mavm.isAnimatedPaging.collectAsStateWithLifecycle()
 
     val articleScrollState = rememberScrollState(initial = viewModel.scrollPosition)
+
+    // Fork: once this article has slid in after a swipe, other navigation fades again
+    LaunchedEffect(Unit) {
+        delay(1000)
+        ArticleSwipeDirection.current = 0
+    }
 
     LaunchedEffect(articleScrollState) {
         snapshotFlow { articleScrollState.value }
@@ -171,7 +178,7 @@ fun ArticleScreen(
         onTextSettings = onNavigateToTextSettings,
         onSwipeArticle = { next ->
             viewModel.adjacentArticleId(next)?.let { id ->
-                onSwipeToArticle(id)
+                onSwipeToArticle(id, next)
                 true
             } ?: false
         },

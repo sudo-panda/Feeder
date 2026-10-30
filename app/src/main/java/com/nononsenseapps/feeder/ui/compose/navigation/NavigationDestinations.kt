@@ -6,6 +6,8 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -30,6 +32,7 @@ import com.nononsenseapps.feeder.ui.compose.editfeed.EditFeedScreen
 import com.nononsenseapps.feeder.ui.compose.editfeed.EditFeedScreenViewModel
 import com.nononsenseapps.feeder.ui.compose.feed.FeedScreen
 import com.nononsenseapps.feeder.ui.compose.feedarticle.ArticleScreen
+import com.nononsenseapps.feeder.ui.compose.feedarticle.ArticleSwipeDirection
 import com.nononsenseapps.feeder.ui.compose.searchfeed.SearchFeedScreen
 import com.nononsenseapps.feeder.ui.compose.settings.SettingsScreen
 import com.nononsenseapps.feeder.ui.compose.settings.TextSettingsScreen
@@ -447,7 +450,32 @@ data object ArticleDestination : NavigationDestination(
                 uriPattern = "$DEEP_LINK_BASE_URI/article/{itemId}"
             },
         ),
+    // Fork: swiping between articles turns the page sideways, see ArticleSwipeBox
+    enterTransition = {
+        when (val direction = ArticleSwipeDirection.current) {
+            0 -> fadeIn()
+            else -> slideInHorizontally { width -> direction * width }
+        }
+    },
+    exitTransition = {
+        when (val direction = ArticleSwipeDirection.current) {
+            0 -> fadeOut()
+            else -> slideOutHorizontally { width -> -direction * width }
+        }
+    },
 ) {
+    // Fork: replaces the current article in one step, so Back still returns to the feed list
+    fun swipeTo(
+        navController: NavController,
+        itemId: Long,
+        next: Boolean,
+    ) {
+        ArticleSwipeDirection.current = if (next) 1 else -1
+        navController.navigate("$path/$itemId") {
+            popUpTo(route) { inclusive = true }
+        }
+    }
+
     fun navigate(
         navController: NavController,
         itemId: Long,
@@ -491,10 +519,7 @@ data object ArticleDestination : NavigationDestination(
             onNavigateToArticle = { ArticleDestination.navigate(navController, it) },
             onNavigateToTextSettings = { TextSettingsDestination.navigate(navController) },
             // Fork: swiping replaces the article, so Back still returns to the feed list
-            onSwipeToArticle = { id ->
-                navController.popBackStack()
-                ArticleDestination.navigate(navController, id)
-            },
+            onSwipeToArticle = { id, next -> ArticleDestination.swipeTo(navController, id, next) },
         )
     }
 }
