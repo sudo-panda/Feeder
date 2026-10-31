@@ -31,7 +31,8 @@
 > - **Read aloud settings:** speed (0.5×–2×), language and voice in one panel, from the
 >   player's settings button or *Settings → Read aloud settings*.
 > - **Swipe between articles:** in the reader, swipe left for the next article and right for
->   the previous one, in the order of the list you opened it from.
+>   the previous one, in the order of the list you opened it from. While swiping, the next
+>   article's page shows beside the current one, from stored data only. Tap-to-page is gone.
 > - **Friendlier empty list:** "All caught up" with buttons to open another feed or add one.
 > - **Boost-style pull to refresh:** the circle only follows your finger; loading shows as a
 >   thin accent-coloured bar under the top bar.

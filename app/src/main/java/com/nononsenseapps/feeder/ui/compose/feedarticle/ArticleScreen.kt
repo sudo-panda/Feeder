@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
@@ -42,6 +44,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -77,6 +80,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nononsenseapps.feeder.R
+import com.nononsenseapps.feeder.archmodel.Enclosure
 import com.nononsenseapps.feeder.archmodel.Repository
 import com.nononsenseapps.feeder.archmodel.TextToDisplay
 import com.nononsenseapps.feeder.archmodel.formatForFeed
@@ -95,8 +99,10 @@ import com.nononsenseapps.feeder.ui.compose.readaloud.SpeechFollowViewport
 import com.nononsenseapps.feeder.ui.compose.readaloud.SpeechHighlight
 import com.nononsenseapps.feeder.ui.compose.readaloud.stopSpeechFollowingOnAccessibilityScroll
 import com.nononsenseapps.feeder.ui.compose.readaloud.stopSpeechFollowingOnUserScroll
+import com.nononsenseapps.feeder.ui.compose.theme.LocalDimens
 import com.nononsenseapps.feeder.ui.compose.theme.SensibleTopAppBar
 import com.nononsenseapps.feeder.ui.compose.utils.ImmutableHolder
+import com.nononsenseapps.feeder.ui.compose.utils.ProvideScaledText
 import com.nononsenseapps.feeder.ui.compose.utils.ScreenType
 import com.nononsenseapps.feeder.ui.compose.utils.onKeyEventLikeEscape
 import com.nononsenseapps.feeder.util.ActivityLauncher
@@ -182,11 +188,10 @@ fun ArticleScreen(
     ArticleScreen(
         viewState = viewState,
         onTextSettings = onNavigateToTextSettings,
+        neighbours = viewModel.neighbours.collectAsStateWithLifecycle().value,
         onSwipeArticle = { next ->
-            viewModel.adjacentArticleId(next)?.let { id ->
-                onSwipeToArticle(id, next)
-                true
-            } ?: false
+            val neighbours = viewModel.neighbours.value
+            (if (next) neighbours.next else neighbours.previous)?.let { onSwipeToArticle(it.id, next) }
         },
         onToggleFullText = viewModel::toggleFullText,
         isFullText = viewModel.showingFullText.collectAsStateWithLifecycle().value,
@@ -314,7 +319,8 @@ fun ArticleScreen(
     isPagingMode: Boolean = false,
     isAnimatedPaging: Boolean = false,
     onTextSettings: () -> Unit = {},
-    onSwipeArticle: suspend (next: Boolean) -> Boolean = { false },
+    onSwipeArticle: (next: Boolean) -> Unit = {},
+    neighbours: ArticleNeighbours = ArticleNeighbours(),
     isFullText: Boolean = false,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
@@ -582,7 +588,11 @@ fun ArticleScreen(
             val coroutineScope = rememberCoroutineScope()
             // Fork: swipe left or right for the next or previous article
             CompositionLocalProvider(LocalFindHighlights provides findHighlightMap) {
-                ArticleSwipeBox(onSwipe = onSwipeArticle) {
+                ArticleSwipeBox(
+                    onSwipe = onSwipeArticle,
+                    previous = neighbours.previous?.let { peek -> { ArticlePeekPage(peek) } },
+                    next = neighbours.next?.let { peek -> { ArticlePeekPage(peek) } },
+                ) {
                     ArticleContent(
                         viewState = viewState,
                         screenType = ScreenType.SINGLE,
@@ -602,33 +612,8 @@ fun ArticleScreen(
                         findFocusRequest = findRequest,
                         modifier =
                             Modifier
-                                .pagingTaps(
-                                    enabled = isPagingMode,
-                                    onPrevious = {
-                                        val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
-                                        val target = (articleScrollState.value - scrollAmount).coerceAtLeast(0)
-                                        ttsOnUserScroll()
-                                        coroutineScope.launch {
-                                            if (isAnimatedPaging) {
-                                                articleScrollState.animateScrollTo(target)
-                                            } else {
-                                                articleScrollState.scrollTo(target)
-                                            }
-                                        }
-                                    },
-                                    onNext = {
-                                        val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
-                                        val target = (articleScrollState.value + scrollAmount).coerceAtMost(articleScrollState.maxValue)
-                                        ttsOnUserScroll()
-                                        coroutineScope.launch {
-                                            if (isAnimatedPaging) {
-                                                articleScrollState.animateScrollTo(target)
-                                            } else {
-                                                articleScrollState.scrollTo(target)
-                                            }
-                                        }
-                                    },
-                                ).focusGroup()
+                                // Fork: no tap zones for page turns, they got in the way of the buttons
+                                .focusGroup()
                                 .focusRequester(focusArticle)
                                 .focusProperties {
                                     up = focusTopBar
@@ -917,6 +902,40 @@ private fun SummarySection(summary: OpenAISummaryState) {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// Fork: the neighbouring article as the reader will show it, built only from stored data
+@Composable
+private fun ArticlePeekPage(peek: ArticlePeek) {
+    val context = LocalContext.current
+    Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxSize()) {
+        ReaderView(
+            screenType = ScreenType.SINGLE,
+            wordCount = peek.wordCount,
+            onEnclosureClick = {},
+            onFeedTitleClick = {},
+            enclosure = Enclosure(),
+            articleTitle = peek.title,
+            feedTitle = peek.feedTitle,
+            saved = peek.bookmarked,
+            onSaveClick = {},
+            isUnread = peek.unread,
+            onMarkAsUnread = {},
+            authorDate =
+                listOfNotNull(
+                    peek.author?.takeIf { it.isNotBlank() },
+                    peek.pubDate.formatForFeed(context).takeIf { it.isNotBlank() },
+                ).joinToString(" · ").takeIf { it.isNotEmpty() },
+            image = peek.image,
+            showHeaderImage = true,
+            contentImageUrls = emptySet(),
+            feedImageUrl = peek.feedImageUrl,
+        ) { _ ->
+            ProvideScaledText(style = MaterialTheme.typography.bodyLarge) {
+                Text(peek.snippet, modifier = Modifier.width(LocalDimens.current.maxReaderWidth))
             }
         }
     }

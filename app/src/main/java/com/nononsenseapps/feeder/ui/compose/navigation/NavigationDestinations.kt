@@ -6,8 +6,6 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -450,18 +448,12 @@ data object ArticleDestination : NavigationDestination(
                 uriPattern = "$DEEP_LINK_BASE_URI/article/{itemId}"
             },
         ),
-    // Fork: swiping between articles turns the page sideways, see ArticleSwipeBox
+    // Fork: after a swipe the preview has already slid in, see ArticleSwipeBox
     enterTransition = {
-        when (val direction = ArticleSwipeDirection.current) {
-            0 -> fadeIn()
-            else -> slideInHorizontally { width -> direction * width }
-        }
+        if (ArticleSwipeDirection.current == 0) fadeIn() else EnterTransition.None
     },
     exitTransition = {
-        when (val direction = ArticleSwipeDirection.current) {
-            0 -> fadeOut()
-            else -> slideOutHorizontally { width -> -direction * width }
-        }
+        if (ArticleSwipeDirection.current == 0) fadeOut() else ExitTransition.None
     },
 ) {
     // Fork: replaces the current article in one step, so Back still returns to the feed list

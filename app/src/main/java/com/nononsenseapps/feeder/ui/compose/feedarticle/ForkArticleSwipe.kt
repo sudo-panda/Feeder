@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -19,18 +20,22 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
- * Fork: Boost-style swiping between articles. The article follows the finger sideways; past a
- * quarter of the width (or with a fling) [onSwipe] is asked to open the next (swipe left) or
- * previous (swipe right) article. When it returns false, for example at the end of the list, the
- * article springs back.
+ * Fork: Boost-style swiping between articles. While dragging, the previous or next article's
+ * [previous]/[next] preview sits right beside the page, like the next page of a book. Released
+ * past half the width (or flung), the preview slides fully in and [onSwipe] opens that article,
+ * which replaces the preview without another animation. Without a neighbour the page springs back.
  */
 @Composable
 fun ArticleSwipeBox(
-    onSwipe: suspend (next: Boolean) -> Boolean,
+    onSwipe: (next: Boolean) -> Unit,
+    previous: (@Composable () -> Unit)?,
+    next: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     val currentOnSwipe by rememberUpdatedState(onSwipe)
+    val hasPrevious by rememberUpdatedState(previous != null)
+    val hasNext by rememberUpdatedState(next != null)
     val offset = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     var width by remember { mutableIntStateOf(1) }
@@ -43,29 +48,40 @@ fun ArticleSwipeBox(
                     orientation = Orientation.Horizontal,
                     state =
                         rememberDraggableState { delta ->
-                            scope.launch { offset.snapTo(offset.value + delta) }
+                            scope.launch {
+                                val target = offset.value + delta
+                                // Only a little give towards a side without an article
+                                val allowed = (target < 0 && hasNext) || (target > 0 && hasPrevious)
+                                offset.snapTo(if (allowed) target else target.coerceIn(-width * 0.08f, width * 0.08f))
+                            }
                         },
                     onDragStopped = { velocity ->
-                        val next = offset.value < 0
-                        val far = abs(offset.value) > width * 0.25f
-                        val flung = abs(velocity) > 1500f && (velocity < 0) == next && abs(offset.value) > width * 0.05f
-                        // On success the screen change slides this page the rest of the way out while the
-                        // next one slides in beside it, so it stays where the finger left it
-                        if (!((far || flung) && currentOnSwipe(next))) {
+                        val goNext = offset.value < 0
+                        val available = if (goNext) hasNext else hasPrevious
+                        val far = abs(offset.value) > width * 0.5f
+                        val flung = abs(velocity) > 1500f && (velocity < 0) == goNext && abs(offset.value) > width * 0.1f
+                        if (available && (far || flung)) {
+                            offset.animateTo(if (goNext) -width.toFloat() else width.toFloat())
+                            currentOnSwipe(goNext)
+                        } else {
                             offset.animateTo(0f)
                         }
                     },
-                ).graphicsLayer {
-                    translationX = offset.value
-                },
+                ),
     ) {
-        content()
+        Box(Modifier.fillMaxSize().graphicsLayer { translationX = offset.value }) { content() }
+        if (offset.value < 0 && next != null) {
+            Box(Modifier.fillMaxSize().graphicsLayer { translationX = offset.value + width }) { next() }
+        }
+        if (offset.value > 0 && previous != null) {
+            Box(Modifier.fillMaxSize().graphicsLayer { translationX = offset.value - width }) { previous() }
+        }
     }
 }
 
 /**
- * Which way the last article swipe went (1 = next, -1 = previous), so the screen change can slide
- * sideways. Reset once the new article is showing, so other navigation keeps its fade.
+ * Which way the last article swipe went (1 = next, -1 = previous). The screen change then skips its
+ * animation, since the preview has already slid in. Reset once the new article shows.
  */
 object ArticleSwipeDirection {
     var current: Int = 0

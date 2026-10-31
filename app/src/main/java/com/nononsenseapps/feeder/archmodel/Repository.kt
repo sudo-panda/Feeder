@@ -208,6 +208,9 @@ class Repository(
 
     suspend fun getCurrentArticle() = feedItemStore.getArticle(currentArticleId.value)
 
+    // Fork: for the preview of the next/previous article while swiping in the reader
+    suspend fun getArticleById(id: Long) = feedItemStore.getArticle(id)
+
     fun getArticleFlow(itemId: Long): Flow<Article?> =
         feedItemStore
             .getFeedItem(itemId)

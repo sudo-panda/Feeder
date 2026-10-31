@@ -60,6 +60,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -268,6 +269,7 @@ class ArticleViewModel(
         )
 
     init {
+        loadNeighbours()
         viewModelScope.launch {
             articleFlow.collect { article ->
                 val feedId = article?.item?.feedId ?: return@collect
@@ -476,8 +478,37 @@ class ArticleViewModel(
         }
     }
 
-    // Fork: the article to open when swiping, see ArticleSwipeBox
-    suspend fun adjacentArticleId(next: Boolean): Long? = repository.getAdjacentArticleId(itemId, next)
+    // Fork: previews of the previous and next articles, shown beside the page while swiping, from
+    // what's already in the database (nothing the reader itself would load), see ArticleSwipeBox
+    private val _neighbours = MutableStateFlow(ArticleNeighbours())
+    val neighbours: StateFlow<ArticleNeighbours> = _neighbours.asStateFlow()
+
+    private fun loadNeighbours() {
+        viewModelScope.launch(Dispatchers.IO) {
+            suspend fun peek(next: Boolean): ArticlePeek? {
+                val id = repository.getAdjacentArticleId(itemId, next) ?: return null
+                val item = repository.getArticleById(id) ?: return null
+                return ArticlePeek(
+                    id = id,
+                    feedTitle = item.feedDisplayTitle,
+                    feedImageUrl =
+                        item.feedId
+                            ?.let { repository.getFeed(it) }
+                            ?.imageUrl
+                            ?.toString(),
+                    title = item.plainTitle,
+                    author = item.author,
+                    pubDate = item.pubDate,
+                    snippet = item.plainSnippet,
+                    image = item.thumbnailImage,
+                    wordCount = maxOf(item.wordCount, item.wordCountFull),
+                    bookmarked = item.bookmarked,
+                    unread = item.readTime == null,
+                )
+            }
+            _neighbours.value = ArticleNeighbours(previous = peek(next = false), next = peek(next = true))
+        }
+    }
 
     // Fork: the reader's read/unread button toggles
     fun markAsRead() {
@@ -1067,3 +1098,25 @@ sealed class TSSError
 data object TTSFileNotFound : TSSError()
 
 data object TTSUnknownError : TSSError()
+
+// Fork: see ArticleViewModel.neighbours
+@Immutable
+data class ArticlePeek(
+    val id: Long,
+    val feedTitle: String,
+    val feedImageUrl: String?,
+    val title: String,
+    val author: String?,
+    val pubDate: ZonedDateTime?,
+    val snippet: String,
+    val image: ThumbnailImage?,
+    val wordCount: Int,
+    val bookmarked: Boolean,
+    val unread: Boolean,
+)
+
+@Immutable
+data class ArticleNeighbours(
+    val previous: ArticlePeek? = null,
+    val next: ArticlePeek? = null,
+)
