@@ -269,7 +269,6 @@ class ArticleViewModel(
         )
 
     init {
-        loadNeighbours()
         viewModelScope.launch {
             articleFlow.collect { article ->
                 val feedId = article?.item?.feedId ?: return@collect
@@ -508,6 +507,12 @@ class ArticleViewModel(
             }
             _neighbours.value = ArticleNeighbours(previous = peek(next = false), next = peek(next = true))
         }
+    }
+
+    // Must come after _neighbours: Kotlin runs initialisers in order, and starting earlier crashed
+    // the reader with the state not created yet
+    init {
+        loadNeighbours()
     }
 
     // Fork: the reader's read/unread button toggles
