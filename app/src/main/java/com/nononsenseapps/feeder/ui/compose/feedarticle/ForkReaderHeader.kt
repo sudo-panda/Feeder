@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -155,8 +154,6 @@ fun ForkReaderActionBar(
     isUnread: Boolean,
     onToggleRead: () -> Unit,
     modifier: Modifier = Modifier,
-    // Lines the first icon up with the text: the 22dp icon sits 13dp inside its 48dp button
-    startPadding: Dp = 0.dp,
 ) {
     // Same buttons, size and alignment as the feed cards' action bar. The 48dp buttons already have
     // space around their icons, so the bar takes up 10dp less above and below than it measures.
@@ -170,11 +167,10 @@ fun ForkReaderActionBar(
                 }
             },
     ) {
+        // Spread evenly across the width, unlike the cards' left-aligned bar
         Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(start = startPadding),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            modifier = Modifier.fillMaxWidth(),
         ) {
             ForkActionButton(
                 icon = if (saved) Icons.Filled.Star else Icons.Outlined.StarBorder,

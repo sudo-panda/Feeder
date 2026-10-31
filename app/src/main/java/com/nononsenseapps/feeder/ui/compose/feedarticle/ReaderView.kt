@@ -166,7 +166,6 @@ fun ReaderView(
                     onReadAloud = onReadAloud,
                     isUnread = isUnread,
                     onToggleRead = onMarkAsUnread,
-                    startPadding = (bleed - 13.dp).coerceAtLeast(0.dp),
                     modifier =
                         Modifier
                             .width(dimens.maxReaderWidth)
