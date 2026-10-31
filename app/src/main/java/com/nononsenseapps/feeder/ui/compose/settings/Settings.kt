@@ -52,6 +52,7 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Swipe
@@ -128,6 +129,7 @@ import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
 import com.nononsenseapps.feeder.ui.compose.dialog.EditableListDialog
 import com.nononsenseapps.feeder.ui.compose.dialog.FeedNotificationsDialog
 import com.nononsenseapps.feeder.ui.compose.feed.ExplainPermissionDialog
+import com.nononsenseapps.feeder.ui.compose.readaloud.ReadAloudSettingsSheet
 import com.nononsenseapps.feeder.ui.compose.theme.LocalDimens
 import com.nononsenseapps.feeder.ui.compose.theme.LocalTypographySettings
 import com.nononsenseapps.feeder.ui.compose.theme.SensibleTopAppBar
@@ -925,6 +927,17 @@ fun SettingsList(
                 onCheckedChange = onUseDetectLanguageChange,
                 description = stringResource(id = R.string.description_for_read_aloud),
             )
+            // Fork: the same panel as the read aloud player's settings button
+            var showReadAloudSettings by rememberSaveable { mutableStateOf(false) }
+            ExternalSetting(
+                stringResource(R.string.read_aloud_settings_summary),
+                title = stringResource(R.string.read_aloud_settings),
+                icon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null) },
+                onClick = { showReadAloudSettings = true },
+            )
+            if (showReadAloudSettings) {
+                ReadAloudSettingsSheet(onDismiss = { showReadAloudSettings = false })
+            }
         }
 
         HorizontalDivider(modifier = Modifier.width(dimens.maxContentWidth))

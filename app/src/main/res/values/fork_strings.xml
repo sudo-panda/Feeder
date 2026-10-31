@@ -29,4 +29,11 @@
   <string name="find_previous">Previous match</string>
   <string name="find_next">Next match</string>
   <string name="close_find">Close search</string>
+  <string name="read_aloud_settings">Read aloud settings</string>
+  <string name="read_aloud_speed">Speed</string>
+  <string name="read_aloud_language">Language</string>
+  <string name="read_aloud_voice">Voice</string>
+  <string name="read_aloud_default_voice">Default voice</string>
+  <string name="read_aloud_online_voice">%1$s (online)</string>
+  <string name="read_aloud_settings_summary">Speed, language and voice</string>
 </resources>

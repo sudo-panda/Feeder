@@ -27,6 +27,8 @@
 >   reader; feeds without an icon get their first letter on a colour of their own.
 > - **Find in article:** the search button in the reader's top bar highlights every match and
 >   jumps between them, like Boost.
+> - **Read aloud settings:** speed (0.5×–2×), language and voice in one panel, from the
+>   player's settings button or *Settings → Read aloud settings*.
 > - **Swipe between articles:** in the reader, swipe left for the next article and right for
 >   the previous one, in the order of the list you opened it from.
 > - **Friendlier empty list:** "All caught up" with buttons to open another feed or add one.

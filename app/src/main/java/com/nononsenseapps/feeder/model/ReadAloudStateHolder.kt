@@ -21,6 +21,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.preference.PreferenceManager
 import com.nononsenseapps.feeder.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -81,6 +82,15 @@ class TTSStateHolder(
     private var pendingServiceStart = false
     private var audioBuffer: SpeechAudioBuffer? = null
     private var focusSequence = 0L
+
+    // Fork: speed and voice, kept across sessions, see ForkReadAloudSettings
+    private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+    private val _speed = MutableStateFlow(prefs.getFloat(PREF_FORK_TTS_SPEED, 1f))
+    val speed: StateFlow<Float> = _speed.asStateFlow()
+    private val _voiceName = MutableStateFlow(prefs.getString(PREF_FORK_TTS_VOICE, null))
+    val voiceName: StateFlow<String?> = _voiceName.asStateFlow()
+    private val _availableVoices = MutableStateFlow<List<TtsVoiceOption>>(emptyList())
+    val availableVoices: StateFlow<List<TtsVoiceOption>> = _availableVoices.asStateFlow()
 
     fun requestSpokenTextFocus(): Long? {
         val current = _progress.value
@@ -144,6 +154,7 @@ class TTSStateHolder(
         ticker?.cancel()
         this.service = service
         this.player = player
+        player.setPlaybackSpeed(_speed.value)
         player.addListener(
             object : Player.Listener {
                 override fun onPlayWhenReadyChanged(
@@ -290,6 +301,13 @@ class TTSStateHolder(
             val locale =
                 candidates.firstOrNull { engine.setLanguage(it) >= TextToSpeech.LANG_AVAILABLE }
                     ?: error("Speech language is not available")
+            // Fork: the chosen voice, when it speaks this language
+            publishVoices(engine, locale)
+            _voiceName.value?.let { name ->
+                engine.voices
+                    ?.firstOrNull { it.name == name && it.locale.language == locale.language }
+                    ?.let { engine.voice = it }
+            }
             val parts = speechSegments(current.text, locale, minOf(TextToSpeech.getMaxSpeechInputLength(), 700), firstChunkMaxLength = 180)
             return withContext(Dispatchers.IO) {
                 SpeechWaveFile(audio).use { wave ->
@@ -444,6 +462,67 @@ class TTSStateHolder(
         seekTo(segments.firstOrNull { it.startMillis > position + 50 }?.startMillis ?: _progress.value.durationMillis)
     }
 
+    // Fork: takes effect right away, also while playing
+    fun setSpeed(value: Float) {
+        _speed.value = value
+        prefs.edit().putFloat(PREF_FORK_TTS_SPEED, value).apply()
+        coroutineScope.launch(Dispatchers.Main.immediate) { player?.setPlaybackSpeed(value) }
+    }
+
+    // Fork: null is the engine's default voice. The current article is spoken again in the new voice.
+    fun setVoice(name: String?) {
+        coroutineScope.launch(Dispatchers.Main.immediate) {
+            _voiceName.value = name
+            prefs.edit().putString(PREF_FORK_TTS_VOICE, name).apply()
+            request?.let { tts(listOf(AnnotatedString(it.text)), it.detectLanguage, it.articleId, it.title, it.author, it.feedTitle) }
+        }
+    }
+
+    // Fork: fills the language and voice lists for the settings, also before anything was read aloud
+    fun loadVoices() {
+        coroutineScope.launch(Dispatchers.Main) {
+            val initialized = CompletableDeferred<Int>()
+            val engine = TextToSpeech(context) { initialized.complete(it) }
+            try {
+                if (withTimeout(15_000) { initialized.await() } != TextToSpeech.SUCCESS) return@launch
+                if (_availableLanguages.value.isEmpty()) {
+                    _availableLanguages.value = engine.availableLanguages.orEmpty().sortedBy { it.getDisplayName(it) }
+                }
+                val locale = (_language.value as? ForcedLocale)?.locale ?: context.getLocales().firstOrNull() ?: Locale.getDefault()
+                if (_availableVoices.value.isEmpty()) publishVoices(engine, locale)
+            } catch (e: Exception) {
+                if (e is CancellationException && e !is TimeoutCancellationException) throw e
+                Log.w(LOG_TAG, "Could not list speech voices", e)
+            } finally {
+                engine.shutdown()
+            }
+        }
+    }
+
+    private fun publishVoices(
+        engine: TextToSpeech,
+        locale: Locale,
+    ) {
+        val voices =
+            engine.voices
+                .orEmpty()
+                .filter { it.locale.language == locale.language && !it.features.orEmpty().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED) }
+                .sortedWith(compareBy({ it.isNetworkConnectionRequired }, { it.locale.country }, { it.name }))
+        _availableVoices.value =
+            voices
+                .groupBy { it.locale.country }
+                .flatMap { (_, sameRegion) ->
+                    sameRegion.mapIndexed { index, voice ->
+                        val region = voice.locale.getDisplayCountry(voice.locale).ifBlank { voice.locale.getDisplayLanguage(voice.locale) }
+                        TtsVoiceOption(
+                            name = voice.name,
+                            label = "$region ${index + 1}",
+                            online = voice.isNetworkConnectionRequired,
+                        )
+                    }
+                }
+    }
+
     fun setLanguage(lang: LocaleOverride) {
         coroutineScope.launch(Dispatchers.Main.immediate) {
             _language.value = lang
@@ -596,3 +675,14 @@ object ForcedAuto : LocaleOverride()
 data class ForcedLocale(
     val locale: Locale,
 ) : LocaleOverride()
+
+// Fork: a voice choice for the read aloud settings
+@Immutable
+data class TtsVoiceOption(
+    val name: String,
+    val label: String,
+    val online: Boolean,
+)
+
+private const val PREF_FORK_TTS_SPEED = "pref_fork_tts_speed"
+private const val PREF_FORK_TTS_VOICE = "pref_fork_tts_voice"
