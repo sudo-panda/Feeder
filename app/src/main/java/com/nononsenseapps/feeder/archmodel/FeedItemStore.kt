@@ -357,6 +357,54 @@ class FeedItemStore(
         )
 
     suspend fun getArticle(id: Long): FeedItemWithFeed? = dao.getFeedItem(id)
+
+    // Fork: the article right below (next) or above (previous) the given one in a feed list, for
+    // swiping between articles in the reader. Same filter and order as the list itself.
+    suspend fun adjacentItemId(
+        itemId: Long,
+        next: Boolean,
+        feedId: Long,
+        tag: String,
+        filter: FeedListFilter,
+        search: String,
+        minReadTime: Instant,
+        newestFirst: Boolean,
+    ): Long? {
+        val current = dao.loadFeedItem(itemId) ?: return null
+        // "Next" goes down the list: towards older articles when the newest are on top
+        val descending = next == newestFirst
+        val compare = if (descending) "<" else ">"
+        val order = if (descending) "DESC" else "ASC"
+        val pubDate = current.pubDate?.toString()
+        val args = mutableListOf<Any?>()
+        val queryString =
+            StringBuilder().apply {
+                append("SELECT feed_items.id FROM feed_items\n")
+                append("LEFT JOIN feeds ON feed_items.feed_id = feeds.id\n")
+                append("WHERE\n")
+                rawQueryFilter(filter, search, args, minReadTime, feedId, tag)
+                append("AND feed_items.id IS NOT ?\n").also { args.add(itemId) }
+                append("AND (\n")
+                append("primary_sort_time $compare ?\n").also { args.add(current.primarySortTime.toEpochMilli()) }
+                append("OR primary_sort_time = ? AND pub_date $compare ?\n").also {
+                    args.add(current.primarySortTime.toEpochMilli())
+                    args.add(pubDate)
+                }
+                append("OR primary_sort_time = ? AND pub_date IS ? AND feed_items.id $compare ?\n").also {
+                    args.add(current.primarySortTime.toEpochMilli())
+                    args.add(pubDate)
+                    args.add(itemId)
+                }
+                append(")\n")
+                append("ORDER BY primary_sort_time $order, pub_date $order, feed_items.id $order\n")
+                append("LIMIT 1\n")
+            }
+        return withContext(Dispatchers.IO) {
+            appDatabase.openHelper.readableDatabase
+                .query(SimpleSQLiteQuery(queryString.toString(), args.toTypedArray()))
+                .use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else null }
+        }
+    }
 }
 
 private fun PreviewItem.toFeedListItem(context: Context) =

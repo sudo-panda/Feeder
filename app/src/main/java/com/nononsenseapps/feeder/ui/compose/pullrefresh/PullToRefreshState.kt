@@ -123,9 +123,9 @@ class PullRefreshState internal constructor(
         if (!this._refreshing) {
             if (adjustedDistancePulled > threshold) {
                 onRefreshState.value()
-            } else {
-                animateIndicatorTo(0f)
             }
+            // Fork: the circle only follows the finger, the feed screen shows loading as a bar
+            animateIndicatorTo(0f)
         }
         distancePulled = 0f
     }

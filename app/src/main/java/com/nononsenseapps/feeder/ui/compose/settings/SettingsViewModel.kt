@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 import androidx.core.content.getSystemService
 import androidx.lifecycle.viewModelScope
 import com.nononsenseapps.feeder.ApplicationCoroutineScope
+import com.nononsenseapps.feeder.archmodel.AccentColor
 import com.nononsenseapps.feeder.archmodel.DarkThemePreferences
 import com.nononsenseapps.feeder.archmodel.FeedItemStyle
 import com.nononsenseapps.feeder.archmodel.ItemOpener
@@ -87,8 +88,8 @@ class SettingsViewModel(
         repository.setUseDetectLanguage(value)
     }
 
-    fun setUseDynamicTheme(value: Boolean) {
-        repository.setUseDynamicTheme(value)
+    fun setAccentColor(value: AccentColor) {
+        repository.setAccentColor(value)
     }
 
     fun setMaxCountPerFeed(value: Int) {
@@ -300,7 +301,7 @@ class SettingsViewModel(
                 repository.blockList,
                 repository.applyBlocklistToSummaries,
                 repository.useDetectLanguage,
-                repository.useDynamicTheme,
+                repository.accentColor,
                 immutableFeedsSettings,
                 repository.isMarkAsReadOnScroll,
                 repository.maxLines,
@@ -346,7 +347,7 @@ class SettingsViewModel(
                     blockList = params[16] as List<String>,
                     applyBlocklistToSummaries = params[17] as Boolean,
                     useDetectLanguage = params[18] as Boolean,
-                    useDynamicTheme = params[19] as Boolean,
+                    accentColor = params[19] as AccentColor,
                     feedsSettings = params[20] as List<UIFeedSettings>,
                     isMarkAsReadOnScroll = params[21] as Boolean,
                     maxLines = params[22] as Int,
@@ -451,7 +452,7 @@ data class SettingsViewState(
     val batteryOptimizationIgnored: Boolean = false,
     val swipeAsRead: SwipeAsRead = SwipeAsRead.ONLY_FROM_END,
     val useDetectLanguage: Boolean = true,
-    val useDynamicTheme: Boolean = true,
+    val accentColor: AccentColor = AccentColor.DEFAULT,
     val feedsSettings: List<UIFeedSettings> = emptyList(),
     val isMarkAsReadOnScroll: Boolean = false,
     val maxLines: Int = 2,

@@ -3,4 +3,37 @@
 <resources>
   <string name="data">Data</string>
   <string name="clear_search">Clear search</string>
+  <string name="accent_color">Accent color</string>
+  <string name="accent_wallpaper">Wallpaper</string>
+  <string name="accent_custom">Custom color</string>
+  <string name="accent_hue">Hue</string>
+  <string name="accent_shade">Shade</string>
+  <string name="accent_hex">Hex</string>
+  <string name="empty_all_caught_up">All caught up</string>
+  <string name="empty_nothing_new">There\'s nothing new to read here.</string>
+  <string name="empty_open_other_feed">Open another feed</string>
+  <string name="empty_add_feed">Add a feed</string>
+  <string name="reader_appearance">Reader appearance</string>
+  <string name="title_size">Title size</string>
+  <string name="line_spacing">Line spacing</string>
+  <string name="edge_to_edge_images">Edge-to-edge images</string>
+  <plurals name="fork_min_read">
+    <item quantity="one">%d min read</item>
+    <item quantity="other">%d min read</item>
+  </plurals>
+  <string name="accent_tiles_hint_wallpaper">First tile: your wallpaper\'s colors. Last tile: a custom color.</string>
+  <string name="accent_tiles_hint">Last tile: a custom color.</string>
+  <string name="accent_light">Light</string>
+  <string name="accent_dark">Dark</string>
+  <string name="find_in_article">Find in article</string>
+  <string name="find_previous">Previous match</string>
+  <string name="find_next">Next match</string>
+  <string name="close_find">Close search</string>
+  <string name="read_aloud_settings">Read aloud settings</string>
+  <string name="read_aloud_speed">Speed</string>
+  <string name="read_aloud_language">Language</string>
+  <string name="read_aloud_voice">Voice</string>
+  <string name="read_aloud_default_voice">Default voice</string>
+  <string name="read_aloud_online_voice">%1$s (online)</string>
+  <string name="read_aloud_settings_summary">Speed, language and voice</string>
 </resources>

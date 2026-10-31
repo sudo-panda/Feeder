@@ -49,8 +49,9 @@ fun PullRefreshIndicator(
     refreshing: Boolean,
     state: PullRefreshState,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = MaterialTheme.colorScheme.surface,
-    contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    // Fork: Boost-style light circle with an accent arrow
+    backgroundColor: Color = MaterialTheme.colorScheme.surfaceBright,
+    contentColor: Color = MaterialTheme.colorScheme.primary,
     scale: Boolean = false,
 ) {
     val showElevation by remember(refreshing, state) {
@@ -65,6 +66,7 @@ fun PullRefreshIndicator(
         shape = SpinnerShape,
         color = backgroundColor,
         tonalElevation = if (showElevation) Elevation else 0.dp,
+        shadowElevation = if (showElevation) Elevation else 0.dp,
     ) {
         Crossfade(
             targetState = refreshing,

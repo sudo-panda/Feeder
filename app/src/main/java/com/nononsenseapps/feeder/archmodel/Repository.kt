@@ -208,6 +208,9 @@ class Repository(
 
     suspend fun getCurrentArticle() = feedItemStore.getArticle(currentArticleId.value)
 
+    // Fork: for the preview of the next/previous article while swiping in the reader
+    suspend fun getArticleById(id: Long) = feedItemStore.getArticle(id)
+
     fun getArticleFlow(itemId: Long): Flow<Article?> =
         feedItemStore
             .getFeedItem(itemId)
@@ -297,6 +300,40 @@ class Repository(
     val useDynamicTheme = settingsStore.useDynamicTheme
 
     fun setUseDynamicTheme(value: Boolean) = settingsStore.setUseDynamicTheme(value)
+
+    // Fork: for swiping between articles in the reader, in the order of the feed list it came from.
+    // Includes articles read in this session, so swiping back finds the one just read.
+    suspend fun getAdjacentArticleId(
+        itemId: Long,
+        next: Boolean,
+    ): Long? {
+        val (feedId, tag) = currentFeedAndTag.value
+        val listFilter = feedListFilter.value
+        return feedItemStore.adjacentItemId(
+            itemId = itemId,
+            next = next,
+            feedId = feedId,
+            tag = tag,
+            filter =
+                object : FeedListFilter {
+                    override val unread = listFilter.unread
+                    override val saved = listFilter.saved
+                    override val recentlyRead = true
+                    override val read = listFilter.read
+                },
+            search = search.value,
+            minReadTime = minReadTime.value,
+            newestFirst = currentSorting.value == SortingOptions.NEWEST_FIRST,
+        )
+    }
+
+    val accentColor = settingsStore.accentColor
+
+    fun setAccentColor(value: AccentColor) = settingsStore.setAccentColor(value)
+
+    val readerAppearance = settingsStore.readerAppearance
+
+    fun setReaderAppearance(value: ReaderAppearance) = settingsStore.setReaderAppearance(value)
 
     val textScale = settingsStore.textScale
 

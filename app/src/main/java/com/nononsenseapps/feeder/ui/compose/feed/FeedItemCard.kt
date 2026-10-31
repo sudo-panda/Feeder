@@ -34,7 +34,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,11 +41,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
@@ -70,6 +66,8 @@ import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.model.MediaImage
 import com.nononsenseapps.feeder.ui.compose.coil.RestrainedCropScaling
 import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
+import com.nononsenseapps.feeder.ui.compose.components.FeedAvatar
+import com.nononsenseapps.feeder.ui.compose.components.ForkActionButton
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
 import com.nononsenseapps.feeder.ui.compose.feedarticle.wordsToReadTimeSecs
 import com.nononsenseapps.feeder.ui.compose.minimumTouchSize
@@ -114,12 +112,11 @@ fun FeedItemCard(
         Column(
             modifier =
                 Modifier
-                    .requiredHeightIn(min = minimumTouchSize)
-                    .alpha(if (!item.unread) 0.75f else 1.0f),
+                    .requiredHeightIn(min = minimumTouchSize),
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 8.dp),
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 4.dp),
             ) {
                 if (item.title.isNotBlank()) {
                     WithBidiDeterminedLayoutDirection(paragraph = item.title) {
@@ -127,6 +124,8 @@ fun FeedItemCard(
                             text = item.title,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = if (item.unread) FontWeight.Bold else FontWeight.Normal,
+                            // Like Boost, only the title shows that an article was read
+                            color = if (item.unread) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = maxLines,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth(),
@@ -230,23 +229,7 @@ private fun FeedItemCardMetaLine(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        item.feedImageUrl?.let { feedImageUrl ->
-            AsyncImage(
-                model =
-                    ImageRequest
-                        .Builder(LocalContext.current)
-                        .data(feedImageUrl.toString())
-                        .scale(Scale.FIT)
-                        .precision(Precision.INEXACT)
-                        .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier =
-                    Modifier
-                        .size(16.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-            )
-        }
+        FeedAvatar(feedTitle = item.feedTitle, imageUrl = item.feedImageUrl?.toString(), size = 16.dp)
         WithBidiDeterminedLayoutDirection(paragraph = meta) {
             Text(
                 text = meta,
@@ -260,6 +243,8 @@ private fun FeedItemCardMetaLine(
 }
 
 // Fork: Boost-style quick actions at the bottom of each card
+internal val FeedItemCardActionsHeight = 48.dp
+
 @Composable
 private fun FeedItemCardActions(
     item: FeedListItem,
@@ -279,8 +264,7 @@ private fun FeedItemCardActions(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
+                .fillMaxWidth(),
     ) {
         CardActionButton(
             icon = if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
@@ -332,9 +316,13 @@ private fun CardActionButton(
     tint: Color,
     onClick: () -> Unit,
 ) {
-    IconButton(onClick = onClick, modifier = Modifier.size(44.dp)) {
-        Icon(icon, contentDescription = contentDescription, tint = tint, modifier = Modifier.size(20.dp))
-    }
+    // Same buttons as the reader's action bar
+    ForkActionButton(
+        icon = icon,
+        label = contentDescription,
+        onClick = onClick,
+        highlighted = tint == MaterialTheme.colorScheme.primary,
+    )
 }
 
 @Composable

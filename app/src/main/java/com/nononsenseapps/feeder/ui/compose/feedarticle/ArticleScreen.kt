@@ -7,34 +7,32 @@ import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.ScrollState
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.OpenInBrowser
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -46,14 +44,24 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -61,7 +69,10 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -69,7 +80,10 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nononsenseapps.feeder.R
+import com.nononsenseapps.feeder.archmodel.Enclosure
+import com.nononsenseapps.feeder.archmodel.Repository
 import com.nononsenseapps.feeder.archmodel.TextToDisplay
+import com.nononsenseapps.feeder.archmodel.formatForFeed
 import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.localtranslation.BergamotModelDownloadProgress
 import com.nononsenseapps.feeder.model.LocaleOverride
@@ -80,20 +94,21 @@ import com.nononsenseapps.feeder.ui.compose.components.TranslationProgressConten
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
 import com.nononsenseapps.feeder.ui.compose.feed.PlainTooltipBox
 import com.nononsenseapps.feeder.ui.compose.html.ColumnArticleContent
-import com.nononsenseapps.feeder.ui.compose.icons.CustomFilled
-import com.nononsenseapps.feeder.ui.compose.icons.TextToSpeech
 import com.nononsenseapps.feeder.ui.compose.readaloud.HideableTTSPlayer
 import com.nononsenseapps.feeder.ui.compose.readaloud.SpeechFollowViewport
 import com.nononsenseapps.feeder.ui.compose.readaloud.SpeechHighlight
 import com.nononsenseapps.feeder.ui.compose.readaloud.stopSpeechFollowingOnAccessibilityScroll
 import com.nononsenseapps.feeder.ui.compose.readaloud.stopSpeechFollowingOnUserScroll
+import com.nononsenseapps.feeder.ui.compose.theme.LocalDimens
 import com.nononsenseapps.feeder.ui.compose.theme.SensibleTopAppBar
 import com.nononsenseapps.feeder.ui.compose.utils.ImmutableHolder
+import com.nononsenseapps.feeder.ui.compose.utils.ProvideScaledText
 import com.nononsenseapps.feeder.ui.compose.utils.ScreenType
 import com.nononsenseapps.feeder.ui.compose.utils.onKeyEventLikeEscape
 import com.nononsenseapps.feeder.util.ActivityLauncher
 import com.nononsenseapps.feeder.util.stripTrackingParameters
 import com.nononsenseapps.feeder.util.unicodeWrap
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
@@ -114,6 +129,8 @@ fun ArticleScreen(
     mainActivityViewModel: MainActivityViewModel,
     modifier: Modifier = Modifier,
     onNavigateToArticle: (Long) -> Unit = {},
+    onNavigateToTextSettings: () -> Unit = {},
+    onSwipeToArticle: (id: Long, next: Boolean) -> Unit = { id, _ -> onNavigateToArticle(id) },
 ) {
     BackHandler(onBack = onNavigateUp)
     val di = LocalDI.current
@@ -127,6 +144,12 @@ fun ArticleScreen(
     val isAnimatedPaging by mavm.isAnimatedPaging.collectAsStateWithLifecycle()
 
     val articleScrollState = rememberScrollState(initial = viewModel.scrollPosition)
+
+    // Fork: once this article has slid in after a swipe, other navigation fades again
+    LaunchedEffect(Unit) {
+        delay(1000)
+        ArticleSwipeDirection.current = 0
+    }
 
     LaunchedEffect(articleScrollState) {
         snapshotFlow { articleScrollState.value }
@@ -164,8 +187,16 @@ fun ArticleScreen(
 
     ArticleScreen(
         viewState = viewState,
+        onTextSettings = onNavigateToTextSettings,
+        neighbours = viewModel.neighbours.collectAsStateWithLifecycle().value,
+        onSwipeArticle = { next ->
+            val neighbours = viewModel.neighbours.value
+            (if (next) neighbours.next else neighbours.previous)?.let { onSwipeToArticle(it.id, next) }
+        },
         onToggleFullText = viewModel::toggleFullText,
-        onMarkAsUnread = viewModel::markAsUnread,
+        isFullText = viewModel.showingFullText.collectAsStateWithLifecycle().value,
+        // Fork: the reader's read/unread button toggles
+        onMarkAsUnread = { if (viewState.isUnread) viewModel.markAsRead() else viewModel.markAsUnread() },
         onShare = {
             if (viewState.articleId > ID_UNSET) {
                 val intent =
@@ -287,8 +318,33 @@ fun ArticleScreen(
     ttsOnUserScroll: () -> Unit = {},
     isPagingMode: Boolean = false,
     isAnimatedPaging: Boolean = false,
+    onTextSettings: () -> Unit = {},
+    onSwipeArticle: (next: Boolean) -> Unit = {},
+    neighbours: ArticleNeighbours = ArticleNeighbours(),
+    isFullText: Boolean = false,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
+    // Fork: Boost-style find in article
+    var findOpen by rememberSaveable { mutableStateOf(false) }
+    var findQuery by rememberSaveable { mutableStateOf("") }
+    var findCurrent by rememberSaveable { mutableIntStateOf(0) }
+    var findRequest by remember { mutableIntStateOf(0) }
+    val findMatchList = remember(viewState.articleContent, findQuery) { findMatches(viewState.articleContent, findQuery) }
+    val findHighlightMap = remember(findMatchList, findCurrent, findOpen) { if (findOpen) findHighlights(findMatchList, findCurrent) else emptyMap() }
+    BackHandler(enabled = findOpen) { findOpen = false }
+
+    // Fork: Boost-style reader appearance panel
+    var showAppearance by rememberSaveable { mutableStateOf(false) }
+    if (showAppearance) {
+        ReaderAppearanceSheet(
+            onDismiss = { showAppearance = false },
+            onMoreTextSettings = {
+                showAppearance = false
+                onTextSettings()
+            },
+        )
+    }
 
     val bottomBarVisibleState = remember { MutableTransitionState(viewState.isBottomBarVisible) }
     LaunchedEffect(viewState.isBottomBarVisible) {
@@ -300,208 +356,196 @@ fun ArticleScreen(
 
     val closeMenuText = stringResource(id = R.string.close_menu)
 
+    // Fork: show the article's title in the top bar once its header has scrolled away
+    val headerHeightPx = with(LocalDensity.current) { 180.dp.toPx() }
+    val showTitleInBar by remember { derivedStateOf { articleScrollState.value > headerHeightPx } }
+
     Scaffold(
         modifier =
             modifier
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
         contentWindowInsets = WindowInsets.statusBars,
+        // Fork: the reader is a white page (dark grey, or black, at night), like a Boost post
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
-            SensibleTopAppBar(
-                modifier =
-                    Modifier
-                        .focusGroup()
-                        .focusRequester(focusTopBar)
-                        .focusProperties {
-                            down = focusArticle
-                        },
-                scrollBehavior = scrollBehavior,
-                title = viewState.feedDisplayTitle,
-                navigationIcon = {
-                    IconButton(onClick = onNavigateUp) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.go_back),
-                        )
-                    }
-                },
-                actions = {
-                    PlainTooltipBox(tooltip = { Text(stringResource(R.string.fetch_full_article)) }) {
-                        IconButton(
-                            onClick = onToggleFullText,
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.Article,
-                                contentDescription = stringResource(R.string.fetch_full_article),
-                            )
+            if (findOpen) {
+                ForkFindBar(
+                    query = findQuery,
+                    onQueryChange = {
+                        findQuery = it
+                        findCurrent = 0
+                        findRequest++
+                    },
+                    current = findCurrent,
+                    total = findMatchList.size,
+                    onPrevious = {
+                        if (findMatchList.isNotEmpty()) {
+                            findCurrent = (findCurrent - 1 + findMatchList.size) % findMatchList.size
+                            findRequest++
                         }
-                    }
-
-                    PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_in_web_view)) }) {
-                        IconButton(
-                            onClick = onOpenInCustomTab,
-                        ) {
-                            Icon(
-                                Icons.Default.OpenInBrowser,
-                                contentDescription = stringResource(id = R.string.open_in_web_view),
-                            )
+                    },
+                    onNext = {
+                        if (findMatchList.isNotEmpty()) {
+                            findCurrent = (findCurrent + 1) % findMatchList.size
+                            findRequest++
                         }
-                    }
-
-                    PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_menu)) }) {
-                        Box {
-                            IconButton(
-                                onClick = { onShowToolbarMenu(true) },
-                            ) {
+                    },
+                    onClose = { findOpen = false },
+                )
+            } else {
+                // Fork: keeps the status bar covered once the top bar has scrolled away
+                Box {
+                    SensibleTopAppBar(
+                        modifier =
+                            Modifier
+                                .focusGroup()
+                                .focusRequester(focusTopBar)
+                                .focusProperties {
+                                    down = focusArticle
+                                },
+                        scrollBehavior = scrollBehavior,
+                        // Fork: the header shows the feed's name, the bar shows the title once scrolled
+                        title = if (showTitleInBar) viewState.articleTitle else "",
+                        titleStyle = MaterialTheme.typography.titleMedium,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        navigationIcon = {
+                            IconButton(onClick = onNavigateUp) {
                                 Icon(
-                                    Icons.Default.MoreVert,
-                                    contentDescription = stringResource(id = R.string.open_menu),
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.go_back),
                                 )
                             }
-                            DropdownMenu(
-                                expanded = viewState.showToolbarMenu,
-                                onDismissRequest = { onShowToolbarMenu(false) },
-                                modifier =
-                                    Modifier
-                                        .onKeyEventLikeEscape {
-                                            onShowToolbarMenu(false)
-                                        },
-                            ) {
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                        onShare()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.Share,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    text = {
-                                        Text(stringResource(id = R.string.share))
-                                    },
-                                )
-
-                                if (viewState.showSummarize) {
-                                    DropdownMenuItem(
-                                        onClick = {
-                                            onShowToolbarMenu(false)
-                                            onSummarize()
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.AutoFixHigh,
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        text = {
-                                            Text(stringResource(id = R.string.summarize))
-                                        },
+                        },
+                        actions = {
+                            // Fork: fetch full article and reader appearance live in the menu, and the
+                            // action bar under the title opens the article in the browser
+                            PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.find_in_article)) }) {
+                                IconButton(onClick = { findOpen = true }) {
+                                    Icon(
+                                        Icons.Default.Search,
+                                        contentDescription = stringResource(id = R.string.find_in_article),
                                     )
                                 }
+                            }
 
-                                if (viewState.showTranslate) {
-                                    DropdownMenuItem(
-                                        onClick = {
-                                            onShowToolbarMenu(false)
-                                            onTranslate()
-                                        },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Translate,
-                                                contentDescription = null,
-                                            )
-                                        },
-                                        text = {
-                                            Text(
-                                                stringResource(
-                                                    if (viewState.isShowingTranslated) {
-                                                        R.string.show_original_language
-                                                    } else {
-                                                        R.string.translate_article
-                                                    },
-                                                    viewState.translationSourceLanguage.ifBlank {
-                                                        stringResource(R.string.original_article)
-                                                    },
-                                                ),
-                                            )
-                                        },
-                                    )
-                                }
-
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                        onMarkAsUnread()
-                                    },
-                                    leadingIcon = {
+                            PlainTooltipBox(tooltip = { Text(stringResource(id = R.string.open_menu)) }) {
+                                Box {
+                                    IconButton(
+                                        onClick = { onShowToolbarMenu(true) },
+                                    ) {
                                         Icon(
-                                            Icons.Default.VisibilityOff,
-                                            contentDescription = null,
+                                            Icons.Default.MoreVert,
+                                            contentDescription = stringResource(id = R.string.open_menu),
                                         )
-                                    },
-                                    text = {
-                                        Text(stringResource(id = R.string.mark_as_unread))
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                        onToggleBookmark()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.Star,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    text = {
-                                        Text(
-                                            stringResource(
-                                                if (viewState.isBookmarked) {
-                                                    R.string.unsave_article
-                                                } else {
-                                                    R.string.save_article
+                                    }
+                                    DropdownMenu(
+                                        expanded = viewState.showToolbarMenu,
+                                        onDismissRequest = { onShowToolbarMenu(false) },
+                                        modifier =
+                                            Modifier
+                                                .onKeyEventLikeEscape {
+                                                    onShowToolbarMenu(false)
                                                 },
-                                            ),
-                                        )
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                        ttsOnPlay()
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.CustomFilled.TextToSpeech,
-                                            contentDescription = null,
-                                        )
-                                    },
-                                    text = {
-                                        Text(stringResource(id = R.string.read_article))
-                                    },
-                                )
-                                // Hidden button for TalkBack
-                                DropdownMenuItem(
-                                    onClick = {
-                                        onShowToolbarMenu(false)
-                                    },
-                                    text = {},
-                                    modifier =
-                                        Modifier
-                                            .height(0.dp)
-                                            .safeSemantics {
-                                                contentDescription = closeMenuText
-                                                role = Role.Button
+                                    ) {
+                                        // Fork: Share, Save, Mark as unread, Open in browser and Read aloud are
+                                        // in the reader's action bar
+                                        DropdownMenuItem(
+                                            onClick = {
+                                                onShowToolbarMenu(false)
+                                                showAppearance = true
                                             },
-                                )
+                                            leadingIcon = {
+                                                Icon(
+                                                    Icons.Outlined.FormatSize,
+                                                    contentDescription = null,
+                                                )
+                                            },
+                                            text = {
+                                                Text(stringResource(id = R.string.reader_appearance))
+                                            },
+                                        )
+                                        if (viewState.showSummarize) {
+                                            DropdownMenuItem(
+                                                onClick = {
+                                                    onShowToolbarMenu(false)
+                                                    onSummarize()
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        Icons.Default.AutoFixHigh,
+                                                        contentDescription = null,
+                                                    )
+                                                },
+                                                text = {
+                                                    Text(stringResource(id = R.string.summarize))
+                                                },
+                                            )
+                                        }
+
+                                        if (viewState.showTranslate) {
+                                            DropdownMenuItem(
+                                                onClick = {
+                                                    onShowToolbarMenu(false)
+                                                    onTranslate()
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        Icons.Default.Translate,
+                                                        contentDescription = null,
+                                                    )
+                                                },
+                                                text = {
+                                                    Text(
+                                                        stringResource(
+                                                            if (viewState.isShowingTranslated) {
+                                                                R.string.show_original_language
+                                                            } else {
+                                                                R.string.translate_article
+                                                            },
+                                                            viewState.translationSourceLanguage.ifBlank {
+                                                                stringResource(R.string.original_article)
+                                                            },
+                                                        ),
+                                                    )
+                                                },
+                                            )
+                                        }
+
+                                        // Hidden button for TalkBack
+                                        DropdownMenuItem(
+                                            onClick = {
+                                                onShowToolbarMenu(false)
+                                            },
+                                            text = {},
+                                            modifier =
+                                                Modifier
+                                                    .height(0.dp)
+                                                    .safeSemantics {
+                                                        contentDescription = closeMenuText
+                                                        role = Role.Button
+                                                    },
+                                        )
+                                    }
+                                }
                             }
-                        }
-                    }
-                },
-            )
+                        },
+                    )
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .windowInsetsTopHeight(WindowInsets.statusBars)
+                                .background(
+                                    if (scrollBehavior.state.collapsedFraction > 0f || scrollBehavior.state.overlappedFraction > 0.01f) {
+                                        MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
+                                    } else {
+                                        MaterialTheme.colorScheme.surface
+                                    },
+                                ),
+                    )
+                }
+            }
         },
         bottomBar = {
             if (viewState.podcastPlayerState.isVisible) {
@@ -542,69 +586,37 @@ fun ArticleScreen(
                     .stopSpeechFollowingOnUserScroll(ttsOnUserScroll),
         ) {
             val coroutineScope = rememberCoroutineScope()
-            ArticleContent(
-                viewState = viewState,
-                screenType = ScreenType.SINGLE,
-                speechHighlight = speechHighlight,
-                articleScrollState = articleScrollState,
-                onUserScroll = ttsOnUserScroll,
-                onFeedTitleClick = onFeedTitleClick,
-                onOpenAudioPlayer = onOpenAudioPlayer,
-                onOpenInCustomTab = onOpenInCustomTab,
-                onBookmark = onToggleBookmark,
-                onMarkAsUnread = onMarkAsUnread,
-                modifier =
-                    Modifier
-                        .focusGroup()
-                        .focusRequester(focusArticle)
-                        .focusProperties {
-                            up = focusTopBar
-                        },
-            )
-
-            if (isPagingMode) {
-                Row(modifier = Modifier.matchParentSize()) {
-                    Box(
+            // Fork: swipe left or right for the next or previous article
+            CompositionLocalProvider(LocalFindHighlights provides findHighlightMap) {
+                ArticleSwipeBox(
+                    onSwipe = onSwipeArticle,
+                    previous = neighbours.previous?.let { peek -> { ArticlePeekPage(peek) } },
+                    next = neighbours.next?.let { peek -> { ArticlePeekPage(peek) } },
+                ) {
+                    ArticleContent(
+                        viewState = viewState,
+                        screenType = ScreenType.SINGLE,
+                        speechHighlight = speechHighlight,
+                        articleScrollState = articleScrollState,
+                        onUserScroll = ttsOnUserScroll,
+                        onFeedTitleClick = onFeedTitleClick,
+                        onOpenAudioPlayer = onOpenAudioPlayer,
+                        onOpenInCustomTab = onOpenInCustomTab,
+                        onBookmark = onToggleBookmark,
+                        onMarkAsUnread = onMarkAsUnread,
+                        onShare = onShare,
+                        onReadAloud = ttsOnPlay,
+                        isFullText = isFullText,
+                        onToggleFullText = onToggleFullText,
+                        findFocusElement = findMatchList.getOrNull(findCurrent)?.elementIndex?.takeIf { findOpen },
+                        findFocusRequest = findRequest,
                         modifier =
                             Modifier
-                                .fillMaxHeight()
-                                .weight(0.2f)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                ) {
-                                    val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
-                                    val target = (articleScrollState.value - scrollAmount).coerceAtLeast(0)
-                                    ttsOnUserScroll()
-                                    coroutineScope.launch {
-                                        if (isAnimatedPaging) {
-                                            articleScrollState.animateScrollTo(target)
-                                        } else {
-                                            articleScrollState.scrollTo(target)
-                                        }
-                                    }
-                                },
-                    )
-                    Spacer(modifier = Modifier.weight(0.6f))
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxHeight()
-                                .weight(0.2f)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null,
-                                ) {
-                                    val scrollAmount = (articleScrollState.viewportSize * 0.9f).toInt()
-                                    val target = (articleScrollState.value + scrollAmount).coerceAtMost(articleScrollState.maxValue)
-                                    ttsOnUserScroll()
-                                    coroutineScope.launch {
-                                        if (isAnimatedPaging) {
-                                            articleScrollState.animateScrollTo(target)
-                                        } else {
-                                            articleScrollState.scrollTo(target)
-                                        }
-                                    }
+                                // Fork: no tap zones for page turns, they got in the way of the buttons
+                                .focusGroup()
+                                .focusRequester(focusArticle)
+                                .focusProperties {
+                                    up = focusTopBar
                                 },
                     )
                 }
@@ -686,6 +698,12 @@ fun ArticleContent(
     modifier: Modifier = Modifier,
     speechHighlight: SpeechHighlight? = null,
     onUserScroll: (() -> Unit)? = null,
+    onShare: () -> Unit = {},
+    onReadAloud: () -> Unit = {},
+    isFullText: Boolean = false,
+    onToggleFullText: () -> Unit = {},
+    findFocusElement: Int? = null,
+    findFocusRequest: Int = 0,
 ) {
     val toolbarColor = MaterialTheme.colorScheme.surface.toArgb()
 
@@ -695,7 +713,22 @@ fun ArticleContent(
 
     // Track Y positions of article elements by index for anchor link scrolling
     val elementPositions = remember { mutableMapOf<Int, Float>() }
+
+    // Fork: scroll the current find-in-article match into view, a bit below the top
+    val findPositions = remember { mutableMapOf<Int, Float>() }
+    var viewportTop by remember { mutableFloatStateOf(0f) }
+    val findMargin = with(LocalDensity.current) { 96.dp.toPx() }
+    LaunchedEffect(findFocusElement, findFocusRequest) {
+        val y = findFocusElement?.let { findPositions[it] } ?: return@LaunchedEffect
+        articleScrollState.animateScrollBy(y - viewportTop - findMargin)
+    }
     val contentImageUrls = remember(viewState.articleContent) { viewState.articleContent.imageUrls }
+
+    // Fork: the feed's icon for the reader header, the same one the feed list and drawer show
+    val repository: Repository by LocalDI.current.instance()
+    val feedImageUrl by produceState<String?>(null, viewState.articleFeedId) {
+        value = repository.getFeed(viewState.articleFeedId)?.imageUrl?.toString()
+    }
 
     ReaderView(
         screenType = screenType,
@@ -717,30 +750,26 @@ fun ArticleContent(
         onSaveClick = onBookmark,
         isUnread = viewState.isUnread,
         onMarkAsUnread = onMarkAsUnread,
+        // Fork: short "author · date" like the feed cards, instead of "by …, Friday, 30 October …"
         authorDate =
-            when {
-                viewState.author == null && viewState.pubDate != null ->
-                    stringResource(
-                        R.string.on_date,
-                        formatArticleDate(context, viewState.pubDate),
-                    )
-
-                viewState.author != null && viewState.pubDate != null ->
-                    stringResource(
-                        R.string.by_author_on_date,
-                        // Must wrap author in Unicode marks to ensure it formats
-                        // correctly in RTL
-                        context.unicodeWrap(viewState.author ?: ""),
-                        formatArticleDate(context, viewState.pubDate),
-                    )
-
-                else -> null
-            },
+            listOfNotNull(
+                viewState.author?.takeIf { it.isNotBlank() }?.let { context.unicodeWrap(it) },
+                viewState.pubDate.formatForFeed(context).takeIf { it.isNotBlank() },
+            ).joinToString(" · ").takeIf { it.isNotEmpty() },
         image = viewState.image,
         showHeaderImage = viewState.textToDisplay == TextToDisplay.CONTENT,
         contentImageUrls = contentImageUrls,
-        modifier = if (onUserScroll != null) modifier.stopSpeechFollowingOnAccessibilityScroll(articleScrollState, onUserScroll) else modifier,
+        modifier =
+            (if (onUserScroll != null) modifier.stopSpeechFollowingOnAccessibilityScroll(articleScrollState, onUserScroll) else modifier)
+                .onGloballyPositioned { viewportTop = it.positionInRoot().y },
         articleScrollState = articleScrollState,
+        onShare = onShare,
+        // Fork: the only open-in-browser button now, it does what the top bar's button did
+        onOpenInBrowser = onOpenInCustomTab,
+        onReadAloud = onReadAloud,
+        isFullText = isFullText,
+        onToggleFullText = onToggleFullText,
+        feedImageUrl = feedImageUrl,
     ) { indexOffset ->
         var offsetCounter = indexOffset
 
@@ -787,6 +816,7 @@ fun ArticleContent(
                             }
                         },
                         onElementPosition = { index, yPosition ->
+                            findPositions[index] = yPosition
                             elementPositions[offsetCounter + index] = yPosition
                         },
                     )
@@ -872,6 +902,40 @@ private fun SummarySection(summary: OpenAISummaryState) {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+// Fork: the neighbouring article as the reader will show it, built only from stored data
+@Composable
+private fun ArticlePeekPage(peek: ArticlePeek) {
+    val context = LocalContext.current
+    Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxSize()) {
+        ReaderView(
+            screenType = ScreenType.SINGLE,
+            wordCount = peek.wordCount,
+            onEnclosureClick = {},
+            onFeedTitleClick = {},
+            enclosure = Enclosure(),
+            articleTitle = peek.title,
+            feedTitle = peek.feedTitle,
+            saved = peek.bookmarked,
+            onSaveClick = {},
+            isUnread = peek.unread,
+            onMarkAsUnread = {},
+            authorDate =
+                listOfNotNull(
+                    peek.author?.takeIf { it.isNotBlank() },
+                    peek.pubDate.formatForFeed(context).takeIf { it.isNotBlank() },
+                ).joinToString(" · ").takeIf { it.isNotEmpty() },
+            image = peek.image,
+            showHeaderImage = true,
+            contentImageUrls = emptySet(),
+            feedImageUrl = peek.feedImageUrl,
+        ) { _ ->
+            ProvideScaledText(style = MaterialTheme.typography.bodyLarge) {
+                Text(peek.snippet, modifier = Modifier.width(LocalDimens.current.maxReaderWidth))
             }
         }
     }

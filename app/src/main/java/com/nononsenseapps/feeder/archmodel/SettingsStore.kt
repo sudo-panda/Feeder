@@ -302,6 +302,36 @@ class SettingsStore(
         sp.edit().putBoolean(PREF_DYNAMIC_THEME, value).apply()
     }
 
+    // Fork: accent colour, see AccentColor
+    private val _accentColor = MutableStateFlow(accentColorFromString(sp.getString(PREF_FORK_ACCENT_COLOR, null)))
+    val accentColor = _accentColor.asStateFlow()
+
+    fun setAccentColor(value: AccentColor) {
+        _accentColor.value = value
+        sp.edit().putString(PREF_FORK_ACCENT_COLOR, value.toPrefString()).apply()
+    }
+
+    // Fork: reader appearance, see ReaderAppearance
+    private val _readerAppearance =
+        MutableStateFlow(
+            ReaderAppearance(
+                titleScale = sp.getFloat(PREF_FORK_READER_TITLE_SCALE, 1f),
+                lineSpacing = sp.getFloat(PREF_FORK_READER_LINE_SPACING, 1f),
+                edgeToEdgeImages = sp.getBoolean(PREF_FORK_READER_EDGE_TO_EDGE, true),
+            ),
+        )
+    val readerAppearance = _readerAppearance.asStateFlow()
+
+    fun setReaderAppearance(value: ReaderAppearance) {
+        _readerAppearance.value = value
+        sp
+            .edit()
+            .putFloat(PREF_FORK_READER_TITLE_SCALE, value.titleScale)
+            .putFloat(PREF_FORK_READER_LINE_SPACING, value.lineSpacing)
+            .putBoolean(PREF_FORK_READER_EDGE_TO_EDGE, value.edgeToEdgeImages)
+            .apply()
+    }
+
     private val _textScale =
         MutableStateFlow(
             sp.getFloat(
@@ -682,6 +712,10 @@ const val PREF_THEME = "pref_theme"
  */
 const val PREF_DARK_THEME = "pref_dark_theme"
 const val PREF_DYNAMIC_THEME = "pref_dynamic_theme"
+const val PREF_FORK_ACCENT_COLOR = "pref_fork_accent_color"
+const val PREF_FORK_READER_TITLE_SCALE = "pref_fork_reader_title_scale"
+const val PREF_FORK_READER_LINE_SPACING = "pref_fork_reader_line_spacing"
+const val PREF_FORK_READER_EDGE_TO_EDGE = "pref_fork_reader_edge_to_edge"
 
 /**
  * Sort settings

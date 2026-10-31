@@ -59,6 +59,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
@@ -87,6 +88,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -1046,7 +1048,8 @@ fun FeedScreen(
 
     val pullRefreshState =
         rememberPullRefreshState(
-            refreshing = isRefreshing,
+            // Fork: never refreshing, so the circle goes away on release, see the bar below
+            refreshing = false,
             onRefresh = {
                 manuallyTriggeredRefresh = true
                 onRefreshVisible()
@@ -1160,12 +1163,24 @@ fun FeedScreen(
             )
 
             PullRefreshIndicator(
-                isRefreshing,
+                false,
                 pullRefreshState,
                 modifier =
                     Modifier
                         .align(Alignment.TopCenter),
             )
+
+            // Fork: Boost-style loading bar under the top bar
+            if (isRefreshing) {
+                LinearProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = Color.Transparent,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth(),
+                )
+            }
 
             viewState.translationModelDownloadProgress?.let { progress ->
                 TranslationModelDownloadProgress(
