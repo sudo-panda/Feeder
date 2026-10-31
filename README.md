@@ -20,8 +20,9 @@
 >   tiles, a custom colour (hue, shade or hex), or *Wallpaper* to keep Android 12+ dynamic
 >   colours.
 > - **Boost-style reader:** feed and author line, bold title, edge-to-edge images and an
->   icon bar (save, share, open in browser, read aloud, read/unread). Fetch full article and
->   *Reader appearance* are in the ⋮ menu; the appearance panel has title size, text size,
+>   icon bar (save, full article, read/unread, read aloud, share, open in browser); on/off
+>   buttons turn filled and accent-coloured when on. *Reader appearance* is in the ⋮ menu;
+>   the appearance panel has title size, text size,
 >   line spacing, justify, edge-to-edge images and font.
 > - **Feed avatars everywhere:** the same round feed icon on cards, in the sidebar and in the
 >   reader; feeds without an icon get their first letter on a colour of their own.

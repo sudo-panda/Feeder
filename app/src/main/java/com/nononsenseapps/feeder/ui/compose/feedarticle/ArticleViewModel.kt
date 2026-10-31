@@ -159,6 +159,11 @@ class ArticleViewModel(
     private val isFullText: Boolean
         get() = displayFullTextOverride.value ?: articleFlow.value?.fullTextByDefault ?: false
 
+    // Fork: whether the reader shows the full article, for the full-article button in its bar
+    val showingFullText: StateFlow<Boolean> =
+        combine(displayFullTextOverride, articleFlow) { override, article -> override ?: article?.fullTextByDefault ?: false }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val viewState: StateFlow<ArticleScreenViewState> =
         combine(
             articleFlow,

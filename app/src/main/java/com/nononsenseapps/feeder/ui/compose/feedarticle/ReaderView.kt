@@ -88,6 +88,8 @@ fun ReaderView(
     onShare: () -> Unit = {},
     onOpenInBrowser: () -> Unit = {},
     onReadAloud: () -> Unit = {},
+    isFullText: Boolean = false,
+    onToggleFullText: () -> Unit = {},
     feedImageUrl: String? = null,
     articleBody: @Composable (indexOffset: Int) -> Unit,
 ) {
@@ -164,6 +166,8 @@ fun ReaderView(
                     onShare = onShare,
                     onOpenInBrowser = onOpenInBrowser,
                     onReadAloud = onReadAloud,
+                    isFullText = isFullText,
+                    onToggleFullText = onToggleFullText,
                     isUnread = isUnread,
                     onToggleRead = onMarkAsUnread,
                     modifier =

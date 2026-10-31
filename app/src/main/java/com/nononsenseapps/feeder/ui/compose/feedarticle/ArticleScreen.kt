@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -190,6 +189,7 @@ fun ArticleScreen(
             } ?: false
         },
         onToggleFullText = viewModel::toggleFullText,
+        isFullText = viewModel.showingFullText.collectAsStateWithLifecycle().value,
         // Fork: the reader's read/unread button toggles
         onMarkAsUnread = { if (viewState.isUnread) viewModel.markAsRead() else viewModel.markAsUnread() },
         onShare = {
@@ -315,6 +315,7 @@ fun ArticleScreen(
     isAnimatedPaging: Boolean = false,
     onTextSettings: () -> Unit = {},
     onSwipeArticle: suspend (next: Boolean) -> Boolean = { false },
+    isFullText: Boolean = false,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
@@ -443,21 +444,6 @@ fun ArticleScreen(
                                     ) {
                                         // Fork: Share, Save, Mark as unread, Open in browser and Read aloud are
                                         // in the reader's action bar
-                                        DropdownMenuItem(
-                                            onClick = {
-                                                onShowToolbarMenu(false)
-                                                onToggleFullText()
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    Icons.AutoMirrored.Filled.Article,
-                                                    contentDescription = null,
-                                                )
-                                            },
-                                            text = {
-                                                Text(stringResource(id = R.string.fetch_full_article))
-                                            },
-                                        )
                                         DropdownMenuItem(
                                             onClick = {
                                                 onShowToolbarMenu(false)
@@ -610,6 +596,8 @@ fun ArticleScreen(
                         onMarkAsUnread = onMarkAsUnread,
                         onShare = onShare,
                         onReadAloud = ttsOnPlay,
+                        isFullText = isFullText,
+                        onToggleFullText = onToggleFullText,
                         findFocusElement = findMatchList.getOrNull(findCurrent)?.elementIndex?.takeIf { findOpen },
                         findFocusRequest = findRequest,
                         modifier =
@@ -727,6 +715,8 @@ fun ArticleContent(
     onUserScroll: (() -> Unit)? = null,
     onShare: () -> Unit = {},
     onReadAloud: () -> Unit = {},
+    isFullText: Boolean = false,
+    onToggleFullText: () -> Unit = {},
     findFocusElement: Int? = null,
     findFocusRequest: Int = 0,
 ) {
@@ -792,6 +782,8 @@ fun ArticleContent(
         // Fork: the only open-in-browser button now, it does what the top bar's button did
         onOpenInBrowser = onOpenInCustomTab,
         onReadAloud = onReadAloud,
+        isFullText = isFullText,
+        onToggleFullText = onToggleFullText,
         feedImageUrl = feedImageUrl,
     ) { indexOffset ->
         var offsetCounter = indexOffset

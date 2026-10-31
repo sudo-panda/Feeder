@@ -7,9 +7,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ReadMore
+import androidx.compose.material.icons.filled.MarkEmailUnread
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.outlined.MarkEmailRead
-import androidx.compose.material.icons.outlined.MarkEmailUnread
+import androidx.compose.material.icons.outlined.Drafts
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.Share
@@ -151,6 +152,8 @@ fun ForkReaderActionBar(
     onShare: () -> Unit,
     onOpenInBrowser: () -> Unit,
     onReadAloud: () -> Unit,
+    isFullText: Boolean,
+    onToggleFullText: () -> Unit,
     isUnread: Boolean,
     onToggleRead: () -> Unit,
     modifier: Modifier = Modifier,
@@ -172,24 +175,31 @@ fun ForkReaderActionBar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth(),
         ) {
+            // On/off buttons share one look: filled and in the accent colour when on, outlined and grey when off
             ForkActionButton(
                 icon = if (saved) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                label = stringResource(if (saved) R.string.saved_adjective else R.string.save_article),
+                label = stringResource(if (saved) R.string.unsave_article else R.string.save_article),
                 highlighted = saved,
                 onClick = onSaveClick,
             )
+            ForkActionButton(
+                icon = Icons.AutoMirrored.Outlined.ReadMore,
+                label = stringResource(R.string.fetch_full_article),
+                highlighted = isFullText,
+                onClick = onToggleFullText,
+            )
+            ForkActionButton(
+                icon = if (isUnread) Icons.Filled.MarkEmailUnread else Icons.Outlined.Drafts,
+                label = stringResource(if (isUnread) R.string.mark_as_read else R.string.mark_as_unread),
+                highlighted = isUnread,
+                onClick = onToggleRead,
+            )
+            ForkActionButton(Icons.Outlined.RecordVoiceOver, stringResource(R.string.read_article), onClick = onReadAloud)
             ForkActionButton(Icons.Outlined.Share, stringResource(R.string.share), onClick = onShare)
             ForkActionButton(
                 Icons.Outlined.OpenInBrowser,
                 stringResource(R.string.open_in_web_view),
                 onClick = onOpenInBrowser,
-            )
-            ForkActionButton(Icons.Outlined.RecordVoiceOver, stringResource(R.string.read_article), onClick = onReadAloud)
-            // Shows what a tap does, like the icon behind a swiped card
-            ForkActionButton(
-                icon = if (isUnread) Icons.Outlined.MarkEmailRead else Icons.Outlined.MarkEmailUnread,
-                label = stringResource(if (isUnread) R.string.mark_as_read else R.string.mark_as_unread),
-                onClick = onToggleRead,
             )
         }
     }
