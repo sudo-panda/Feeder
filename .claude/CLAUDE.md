@@ -18,6 +18,10 @@ This is a personal fork of Feeder that ships signed APKs from `master`. Read FOR
    happy with the whole change, or when something can only be checked in CI. If a stop hook
    complains about unpushed commits, this rule wins: say that the commits are waiting for
    the owner's go-ahead.
+   After every push, also run a startup smoke test: a local Robolectric test (not committed)
+   that launches the real `FeederApplication` and `MainActivity`, plus any screen the change
+   touched. If it, or anything else, shows the pushed beta is broken, fix it and push the
+   hotfix right away without waiting for the owner, then tell them what broke and why.
 6. After that push, open a **draft** pull request against `master` (or update the existing
    one). Every push to it publishes a beta of the app (F-Droid "Unstable updates"), which is
    another reason to push only when the owner approves. The **Fork build** check (lint, tests,
