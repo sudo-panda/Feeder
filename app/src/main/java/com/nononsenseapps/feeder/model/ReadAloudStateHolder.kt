@@ -83,12 +83,14 @@ class TTSStateHolder(
     private var audioBuffer: SpeechAudioBuffer? = null
     private var focusSequence = 0L
 
-    // Fork: speed and voice, kept across sessions, see ForkReadAloudSettings
-    private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-    private val _speed = MutableStateFlow(prefs.getFloat(PREF_FORK_TTS_SPEED, 1f))
-    val speed: StateFlow<Float> = _speed.asStateFlow()
-    private val _voiceName = MutableStateFlow(prefs.getString(PREF_FORK_TTS_VOICE, null))
-    val voiceName: StateFlow<String?> = _voiceName.asStateFlow()
+    // Fork: speed and voice, kept across sessions, see ForkReadAloudSettings. Read lazily: the
+    // Application creates this holder before Android has attached its context, so preferences
+    // can't be read during construction (that crashed every app start).
+    private val prefs by lazy { PreferenceManager.getDefaultSharedPreferences(context) }
+    private val _speed by lazy { MutableStateFlow(prefs.getFloat(PREF_FORK_TTS_SPEED, 1f)) }
+    val speed: StateFlow<Float> get() = _speed
+    private val _voiceName by lazy { MutableStateFlow(prefs.getString(PREF_FORK_TTS_VOICE, null)) }
+    val voiceName: StateFlow<String?> get() = _voiceName
     private val _availableVoices = MutableStateFlow<List<TtsVoiceOption>>(emptyList())
     val availableVoices: StateFlow<List<TtsVoiceOption>> = _availableVoices.asStateFlow()
 
