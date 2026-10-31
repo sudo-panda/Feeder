@@ -5,14 +5,22 @@
   android:height="108dp"
   android:viewportWidth="108"
   android:viewportHeight="108">
+  <!-- Glyph at 86% around its centre, arcs ending as far above the dot's bottom as the arms start inside its side -->
+  <group
+    android:pivotX="55.32"
+    android:pivotY="52.115"
+    android:scaleX="0.86"
+    android:scaleY="0.86"
+    android:translateX="-1.32"
+    android:translateY="1.885">
   <path
-    android:pathData="M36.69,57.39L36.69,34.02L48,34.02C65.64,34.02 73.95,44.76 73.95,67.57L73.95,73.98"
+    android:pathData="M36.69,57.39L36.69,34.02L48,34.02C65.64,34.02 73.95,44.76 73.95,67.57L73.95,71.34"
     android:strokeWidth="7.54"
     android:strokeColor="#FFFFFFFF"
     android:strokeLineCap="butt"
     android:strokeLineJoin="miter" />
   <path
-    android:pathData="M36.69,48.16L46.11,48.16C55.91,48.16 60.52,54.34 60.52,67.47L60.52,73.98"
+    android:pathData="M36.69,48.16L46.11,48.16C55.91,48.16 60.52,54.34 60.52,67.47L60.52,71.34"
     android:strokeWidth="7.54"
     android:strokeColor="#FFFFFFFF"
     android:strokeLineCap="butt"
@@ -20,4 +28,5 @@
   <path
     android:fillColor="#FFFFFFFF"
     android:pathData="M36.69,67.57m-6.41,0a6.41,6.41 0,1 1,12.82 0a6.41,6.41 0,1 1,-12.82 0" />
+  </group>
 </vector>
