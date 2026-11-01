@@ -22,7 +22,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -30,6 +32,7 @@ import coil3.request.ImageRequest
 import coil3.size.Precision
 import coil3.size.Scale
 import com.nononsenseapps.feeder.ui.compose.feed.PlainTooltipBox
+import com.nononsenseapps.feeder.ui.compose.theme.LocalListIconScale
 
 // Fork: pieces shared by the feed cards, the drawer and the reader, so they look the same everywhere
 
@@ -45,8 +48,9 @@ fun ForkActionButton(
     val tint = if (highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     // Long press shows the label
     PlainTooltipBox(tooltip = { Text(label) }, modifier = modifier) {
-        IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
-            Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(22.dp))
+        val scale = LocalListIconScale.current
+        IconButton(onClick = onClick, modifier = Modifier.size(48.dp * maxOf(1f, scale))) {
+            Icon(icon, contentDescription = label, tint = tint, modifier = Modifier.size(22.dp * scale))
         }
     }
 }
@@ -76,7 +80,17 @@ fun FeedAvatar(
                 text = feedTitle.trim().take(1).uppercase(),
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = MaterialTheme.typography.labelLarge.fontSize * (size / 36.dp),
+                // Sized from the circle, not the font size setting, and centred without the
+                // inherited line height, so the letter always fits
+                style =
+                    with(LocalDensity.current) {
+                        val letter = (size * 0.42f).toSp()
+                        TextStyle(
+                            fontSize = letter,
+                            lineHeight = letter,
+                            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+                        )
+                    },
                 modifier = Modifier.clearAndSetSemantics { },
             )
         }

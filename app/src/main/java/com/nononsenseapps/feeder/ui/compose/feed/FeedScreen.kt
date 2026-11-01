@@ -9,6 +9,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -39,11 +41,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FilterList
@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.FormatSize
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -88,8 +89,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -242,6 +246,10 @@ fun FeedScreen(
         navDrawerListState = navDrawerListStateToUse,
         selectedId = viewState.currentFeedOrTag.id,
         selectedTag = viewState.currentFeedOrTag.tag,
+        // Fork: adding, editing and deleting feeds moved from the menu to the drawer's edit mode
+        onAddFeed = { SearchFeedDestination.navigate(navController) },
+        onEditFeed = { feedId -> EditFeedDestination.navigate(navController, feedId) },
+        onDeleteFeeds = { feedIds -> viewModel.deleteFeeds(feedIds.toList()) },
     ) {
         FeedScreen(
             viewState = viewState,
@@ -468,6 +476,11 @@ fun FeedScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val closeMenuText = stringResource(id = R.string.close_menu)
+    // Fork: text and icon size panel, like the reader's
+    var showListAppearance by rememberSaveable { mutableStateOf(false) }
+    if (showListAppearance) {
+        ListAppearanceSheet(onDismiss = { showListAppearance = false })
+    }
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(viewState.searchBarVisible) {
@@ -788,54 +801,19 @@ fun FeedScreen(
                             DropdownMenuItem(
                                 onClick = {
                                     onShowToolbarMenu(false)
-                                    onAddFeed()
+                                    showListAppearance = true
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        Icons.Default.Add,
+                                        Icons.Outlined.FormatSize,
                                         contentDescription = null,
                                     )
                                 },
                                 text = {
-                                    Text(stringResource(id = R.string.add_feed))
-                                },
-                            )
-                            DropdownMenuItem(
-                                onClick = {
-                                    if (viewState.visibleFeeds.size == 1) {
-                                        onEditFeed(viewState.visibleFeeds.first().id)
-                                    } else {
-                                        onShowEditDialog()
-                                    }
-                                    onShowToolbarMenu(false)
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Edit,
-                                        contentDescription = null,
-                                    )
-                                },
-                                text = {
-                                    Text(stringResource(id = R.string.edit_feed))
-                                },
-                            )
-                            DropdownMenuItem(
-                                onClick = {
-                                    onShowDeleteDialog()
-                                    onShowToolbarMenu(false)
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Delete,
-                                        contentDescription = null,
-                                    )
-                                },
-                                text = {
-                                    Text(stringResource(id = R.string.delete_feed))
+                                    Text(stringResource(id = R.string.list_appearance))
                                 },
                             )
                             if (viewState.feedScreenTitle.type == FeedType.TAG && !viewState.currentFeedOrTag.isFeed) {
-                                HorizontalDivider()
                                 DropdownMenuItem(
                                     onClick = {
                                         onShowToolbarMenu(false)
@@ -1035,6 +1013,25 @@ fun FeedScreen(
             }
         }
     }
+    // Fork: like Boost, the button hides while scrolling down and comes back when scrolling up
+    var fabHiddenByScroll by remember(viewState.currentFeedOrTag) { mutableStateOf(false) }
+    val fabScrollConnection =
+        remember {
+            object : NestedScrollConnection {
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (consumed.y < -1f) {
+                        fabHiddenByScroll = true
+                    } else if (consumed.y > 1f) {
+                        fabHiddenByScroll = false
+                    }
+                    return Offset.Zero
+                }
+            }
+        }
     val bottomBarVisibleState = remember { MutableTransitionState(viewState.isBottomBarVisible) }
     LaunchedEffect(viewState.isBottomBarVisible) {
         bottomBarVisibleState.targetState = viewState.isBottomBarVisible
@@ -1141,7 +1138,13 @@ fun FeedScreen(
                     enter = scaleIn(animationSpec = tween(256)),
                     exit = scaleOut(animationSpec = tween(256)),
                 ) {
-                    floatingActionButton()
+                    AnimatedVisibility(
+                        visible = !fabHiddenByScroll,
+                        enter = slideInVertically(animationSpec = tween(200)) { it * 2 },
+                        exit = slideOutVertically(animationSpec = tween(200)) { it * 2 },
+                    ) {
+                        floatingActionButton()
+                    }
                 }
             }
         },
@@ -1150,6 +1153,7 @@ fun FeedScreen(
                 // The order is important! PullToRefresh MUST come first
                 .pullRefresh(state = pullRefreshState)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .nestedScroll(fabScrollConnection)
                 .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)),
         contentWindowInsets = WindowInsets.statusBars,
     ) { padding ->
@@ -1158,9 +1162,12 @@ fun FeedScreen(
                 Modifier
                     .padding(padding),
         ) {
-            content(
-                Modifier,
-            )
+            // Fork: list text and icon size, see ListAppearance
+            WithListAppearance {
+                content(
+                    Modifier,
+                )
+            }
 
             PullRefreshIndicator(
                 false,

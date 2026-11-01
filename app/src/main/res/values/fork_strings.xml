@@ -36,4 +36,8 @@
   <string name="read_aloud_default_voice">Default voice</string>
   <string name="read_aloud_online_voice">%1$s (online)</string>
   <string name="read_aloud_settings_summary">Speed, language and voice</string>
+  <string name="fork_edit_feeds">Edit</string>
+  <string name="fork_edit_feeds_done">Done</string>
+  <string name="list_appearance">List appearance</string>
+  <string name="icon_size">Icon size</string>
 </resources>

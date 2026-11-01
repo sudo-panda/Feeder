@@ -335,6 +335,10 @@ class Repository(
 
     fun setReaderAppearance(value: ReaderAppearance) = settingsStore.setReaderAppearance(value)
 
+    val listAppearance = settingsStore.listAppearance
+
+    fun setListAppearance(value: ListAppearance) = settingsStore.setListAppearance(value)
+
     val textScale = settingsStore.textScale
 
     fun setTextScale(value: Float) = settingsStore.setTextScale(value)

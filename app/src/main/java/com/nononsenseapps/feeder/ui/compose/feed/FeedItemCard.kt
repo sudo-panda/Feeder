@@ -55,6 +55,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -76,6 +77,7 @@ import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemDateStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemFeedTitleStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemSnippetTextStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemTitleTextStyle
+import com.nononsenseapps.feeder.ui.compose.theme.LocalListIconScale
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.theme.titleFontWeight
 import com.nononsenseapps.feeder.ui.compose.utils.PreviewThemes
@@ -229,7 +231,7 @@ private fun FeedItemCardMetaLine(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        FeedAvatar(feedTitle = item.feedTitle, imageUrl = item.feedImageUrl?.toString(), size = 16.dp)
+        FeedAvatar(feedTitle = item.feedTitle, imageUrl = item.feedImageUrl?.toString(), size = 16.dp * LocalListIconScale.current)
         WithBidiDeterminedLayoutDirection(paragraph = meta) {
             Text(
                 text = meta,
@@ -243,7 +245,8 @@ private fun FeedItemCardMetaLine(
 }
 
 // Fork: Boost-style quick actions at the bottom of each card
-internal val FeedItemCardActionsHeight = 48.dp
+internal val FeedItemCardActionsHeight: Dp
+    @Composable get() = 48.dp * maxOf(1f, LocalListIconScale.current)
 
 @Composable
 private fun FeedItemCardActions(

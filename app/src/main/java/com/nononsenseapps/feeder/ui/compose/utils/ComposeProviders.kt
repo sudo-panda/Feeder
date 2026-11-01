@@ -16,6 +16,7 @@ import com.nononsenseapps.feeder.base.DIAwareComponentActivity
 import com.nononsenseapps.feeder.base.diAwareViewModel
 import com.nononsenseapps.feeder.ui.CommonActivityViewModel
 import com.nononsenseapps.feeder.ui.compose.theme.FeederTheme
+import com.nononsenseapps.feeder.ui.compose.theme.LocalListAppearance
 import com.nononsenseapps.feeder.ui.compose.theme.LocalReaderAppearance
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.theme.ProvideTypographySettings
@@ -32,6 +33,7 @@ fun DIAwareComponentActivity.withAllProviders(content: @Composable () -> Unit) {
         val font by viewModel.font.collectAsStateWithLifecycle()
         val justifyText by viewModel.justifyText.collectAsStateWithLifecycle()
         val readerAppearance by viewModel.readerAppearance.collectAsStateWithLifecycle()
+        val listAppearance by viewModel.listAppearance.collectAsStateWithLifecycle()
         withFoldableHinge {
             withWindowMetrics {
                 withWindowSize {
@@ -42,7 +44,10 @@ fun DIAwareComponentActivity.withAllProviders(content: @Composable () -> Unit) {
                             dynamicColors = accentColor == AccentColor.Wallpaper,
                             accentColor = accentColor,
                         ) {
-                            CompositionLocalProvider(LocalReaderAppearance provides readerAppearance) {
+                            CompositionLocalProvider(
+                                LocalReaderAppearance provides readerAppearance,
+                                LocalListAppearance provides listAppearance,
+                            ) {
                                 WithFeederTextToolbar(content)
                             }
                         }

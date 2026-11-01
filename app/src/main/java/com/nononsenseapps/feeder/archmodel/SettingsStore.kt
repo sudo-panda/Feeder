@@ -332,6 +332,27 @@ class SettingsStore(
             .apply()
     }
 
+    // Fork: list appearance, see ListAppearance
+    private val _listAppearance =
+        MutableStateFlow(
+            ListAppearance(
+                titleScale = sp.getFloat(PREF_FORK_LIST_TITLE_SCALE, 1f),
+                textScale = sp.getFloat(PREF_FORK_LIST_TEXT_SCALE, 1f),
+                iconScale = sp.getFloat(PREF_FORK_LIST_ICON_SCALE, 1f),
+            ),
+        )
+    val listAppearance = _listAppearance.asStateFlow()
+
+    fun setListAppearance(value: ListAppearance) {
+        _listAppearance.value = value
+        sp
+            .edit()
+            .putFloat(PREF_FORK_LIST_TITLE_SCALE, value.titleScale)
+            .putFloat(PREF_FORK_LIST_TEXT_SCALE, value.textScale)
+            .putFloat(PREF_FORK_LIST_ICON_SCALE, value.iconScale)
+            .apply()
+    }
+
     private val _textScale =
         MutableStateFlow(
             sp.getFloat(
@@ -716,6 +737,9 @@ const val PREF_FORK_ACCENT_COLOR = "pref_fork_accent_color"
 const val PREF_FORK_READER_TITLE_SCALE = "pref_fork_reader_title_scale"
 const val PREF_FORK_READER_LINE_SPACING = "pref_fork_reader_line_spacing"
 const val PREF_FORK_READER_EDGE_TO_EDGE = "pref_fork_reader_edge_to_edge"
+const val PREF_FORK_LIST_TITLE_SCALE = "pref_fork_list_title_scale"
+const val PREF_FORK_LIST_TEXT_SCALE = "pref_fork_list_text_scale"
+const val PREF_FORK_LIST_ICON_SCALE = "pref_fork_list_icon_scale"
 
 /**
  * Sort settings

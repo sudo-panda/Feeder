@@ -2,6 +2,7 @@ package com.nononsenseapps.feeder.ui
 
 import com.nononsenseapps.feeder.archmodel.AccentColor
 import com.nononsenseapps.feeder.archmodel.DarkThemePreferences
+import com.nononsenseapps.feeder.archmodel.ListAppearance
 import com.nononsenseapps.feeder.archmodel.ReaderAppearance
 import com.nononsenseapps.feeder.archmodel.Repository
 import com.nononsenseapps.feeder.archmodel.ThemeOptions
@@ -38,4 +39,8 @@ class CommonActivityViewModel(
     // Fork: see ReaderAppearance
     val readerAppearance: StateFlow<ReaderAppearance> =
         repository.readerAppearance
+
+    // Fork: see ListAppearance
+    val listAppearance: StateFlow<ListAppearance> =
+        repository.listAppearance
 }

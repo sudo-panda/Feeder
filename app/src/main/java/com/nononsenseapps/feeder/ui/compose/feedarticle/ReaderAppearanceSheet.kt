@@ -113,7 +113,7 @@ fun ReaderAppearanceSheet(
 }
 
 @Composable
-private fun SliderRow(
+internal fun SliderRow(
     label: String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,
