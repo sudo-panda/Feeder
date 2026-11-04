@@ -40,4 +40,7 @@
   <string name="fork_edit_feeds_done">Done</string>
   <string name="list_appearance">List appearance</string>
   <string name="icon_size">Icon size</string>
+  <string name="fork_add_short">Add</string>
+  <!-- Also in debug builds, whose app name is FeederD -->
+  <string name="fork_drawer_title" translatable="false">Feeder</string>
 </resources>

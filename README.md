@@ -33,8 +33,9 @@
 > - **Swipe between articles:** in the reader, swipe left for the next article and right for
 >   the previous one, in the order of the list you opened it from. While swiping, the next
 >   article's page shows beside the current one, from stored data only. Tap-to-page is gone.
-> - **Sidebar edit mode:** an *Edit* button in the sidebar shows *Add feed* and an edit and a
->   delete button on every feed, like Boost. These left the feed screen's ⋮ menu.
+> - **Sidebar header and edit mode:** the app's logo in the accent colour next to its name.
+>   Under the line below *Saved articles* are *Add* and *Edit*; *Edit* shows an edit and
+>   a delete button on every feed, like Boost. These left the feed screen's ⋮ menu.
 > - **List appearance:** title size, text size and icon size of the article list, from the feed screen's
 >   ⋮ menu.
 > - **Hiding mark-all-as-read button:** it slides away while you scroll down and comes back
