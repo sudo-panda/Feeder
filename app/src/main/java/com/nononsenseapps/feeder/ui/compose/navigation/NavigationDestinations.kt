@@ -30,6 +30,7 @@ import com.nononsenseapps.feeder.ui.compose.editfeed.EditFeedScreen
 import com.nononsenseapps.feeder.ui.compose.editfeed.EditFeedScreenViewModel
 import com.nononsenseapps.feeder.ui.compose.feed.FeedScreen
 import com.nononsenseapps.feeder.ui.compose.feedarticle.ArticleScreen
+import com.nononsenseapps.feeder.ui.compose.feedarticle.ArticleSwipeDirection
 import com.nononsenseapps.feeder.ui.compose.searchfeed.SearchFeedScreen
 import com.nononsenseapps.feeder.ui.compose.settings.SettingsScreen
 import com.nononsenseapps.feeder.ui.compose.settings.TextSettingsScreen
@@ -447,7 +448,26 @@ data object ArticleDestination : NavigationDestination(
                 uriPattern = "$DEEP_LINK_BASE_URI/article/{itemId}"
             },
         ),
+    // Fork: after a swipe the preview has already slid in, see ArticleSwipeBox
+    enterTransition = {
+        if (ArticleSwipeDirection.current == 0) fadeIn() else EnterTransition.None
+    },
+    exitTransition = {
+        if (ArticleSwipeDirection.current == 0) fadeOut() else ExitTransition.None
+    },
 ) {
+    // Fork: replaces the current article in one step, so Back still returns to the feed list
+    fun swipeTo(
+        navController: NavController,
+        itemId: Long,
+        next: Boolean,
+    ) {
+        ArticleSwipeDirection.current = if (next) 1 else -1
+        navController.navigate("$path/$itemId") {
+            popUpTo(route) { inclusive = true }
+        }
+    }
+
     fun navigate(
         navController: NavController,
         itemId: Long,
@@ -489,6 +509,9 @@ data object ArticleDestination : NavigationDestination(
             viewModel = backStackEntry.diAwareViewModel(),
             mainActivityViewModel = mainActivityViewModel,
             onNavigateToArticle = { ArticleDestination.navigate(navController, it) },
+            onNavigateToTextSettings = { TextSettingsDestination.navigate(navController) },
+            // Fork: swiping replaces the article, so Back still returns to the feed list
+            onSwipeToArticle = { id, next -> ArticleDestination.swipeTo(navController, id, next) },
         )
     }
 }

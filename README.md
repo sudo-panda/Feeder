@@ -14,7 +14,34 @@
 >   unread counts aligned, bold tags with an expand arrow, indented feeds inside tags, and
 >   read feeds dimmed.
 > - **More feed icons:** feeds that declare no icon fall back to their site's `favicon.ico`.
-> - **New app icon.**
+> - **New app icon:** an F whose arms bend into RSS arcs, white on forest green.
+> - **Boost-style colours:** neutral grey backgrounds and cards with one accent colour
+>   (green by default). *Settings → Accent color* replaces *Dynamic colors*: preset colour
+>   tiles, a custom colour (hue, shade or hex), or *Wallpaper* to keep Android 12+ dynamic
+>   colours.
+> - **Boost-style reader:** feed and author line, bold title, edge-to-edge images and an
+>   icon bar (save, full article, read/unread, read aloud, share, open in browser); on/off
+>   buttons turn filled and accent-coloured when on. *Reader appearance* is in the ⋮ menu;
+>   the appearance panel has title size, text size,
+>   line spacing, justify, edge-to-edge images and font.
+> - **Feed avatars everywhere:** the same round feed icon on cards, in the sidebar and in the
+>   reader; feeds without an icon get their first letter on a colour of their own.
+> - **Find in article:** the search button in the reader's top bar highlights every match and
+>   jumps between them, like Boost.
+> - **Read aloud settings:** speed (0.5×–2×), language and voice in one panel, from the
+>   player's settings button or *Settings → Read aloud settings*.
+> - **Swipe between articles:** in the reader, swipe left for the next article and right for
+>   the previous one, in the order of the list you opened it from. While swiping, the next
+>   article's page shows beside the current one, from stored data only. Tap-to-page is gone.
+> - **Sidebar edit mode:** an *Edit* button in the sidebar shows *Add feed* and an edit and a
+>   delete button on every feed, like Boost. These left the feed screen's ⋮ menu.
+> - **List appearance:** title size, text size and icon size of the article list, from the feed screen's
+>   ⋮ menu.
+> - **Hiding mark-all-as-read button:** it slides away while you scroll down and comes back
+>   when you scroll up.
+> - **Friendlier empty list:** "All caught up" with buttons to open another feed or add one.
+> - **Boost-style pull to refresh:** the circle only follows your finger; loading shows as a
+>   thin accent-coloured bar under the top bar.
 > - **Settings → Data:** importing and exporting feeds (OPML) and saved articles moved here
 >   from the feed screen's ⋮ menu.
 > - **Separate app id** (`com.nononsenseapps.feeder.fork`), so it installs next to the

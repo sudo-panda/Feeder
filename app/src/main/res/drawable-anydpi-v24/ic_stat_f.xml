@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fork: the app icon's glyph as the status bar icon, replaces upstream's ic_stat_f pictures -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+  android:width="24dp"
+  android:height="24dp"
+  android:viewportWidth="52"
+  android:viewportHeight="52"
+  android:tint="#FFFFFFFF">
+  <group
+    android:pivotX="55.32"
+    android:pivotY="52.115"
+    android:scaleX="0.86"
+    android:scaleY="0.86"
+    android:translateX="-29.32"
+    android:translateY="-26.115">
+    <path
+      android:pathData="M36.69,57.39L36.69,34.02L48,34.02C65.64,34.02 73.95,44.76 73.95,67.57L73.95,71.34"
+      android:strokeWidth="7.54"
+      android:strokeColor="#FFFFFFFF"
+      android:strokeLineCap="butt"
+      android:strokeLineJoin="miter" />
+    <path
+      android:pathData="M36.69,48.16L46.11,48.16C55.91,48.16 60.52,54.34 60.52,67.47L60.52,71.34"
+      android:strokeWidth="7.54"
+      android:strokeColor="#FFFFFFFF"
+      android:strokeLineCap="butt"
+      android:strokeLineJoin="miter" />
+    <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="M36.69,67.57m-6.41,0a6.41,6.41 0,1 1,12.82 0a6.41,6.41 0,1 1,-12.82 0" />
+  </group>
+</vector>

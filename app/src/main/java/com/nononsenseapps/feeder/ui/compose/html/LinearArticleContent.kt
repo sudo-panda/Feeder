@@ -57,12 +57,16 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.size.Precision
@@ -104,6 +108,9 @@ import com.nononsenseapps.feeder.model.html.LinearVideo
 import com.nononsenseapps.feeder.ui.compose.coil.RestrainedFillWidthScaling
 import com.nononsenseapps.feeder.ui.compose.coil.RestrainedFitScaling
 import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
+import com.nononsenseapps.feeder.ui.compose.feedarticle.LocalFindHighlights
+import com.nononsenseapps.feeder.ui.compose.feedarticle.LocalReaderBleed
+import com.nononsenseapps.feeder.ui.compose.feedarticle.bleed
 import com.nononsenseapps.feeder.ui.compose.layouts.Table
 import com.nononsenseapps.feeder.ui.compose.layouts.TableCell
 import com.nononsenseapps.feeder.ui.compose.layouts.TableData
@@ -524,6 +531,8 @@ fun LinearImageContent(
                 contentAlignment = Alignment.Center,
                 modifier =
                     Modifier
+                        // Fork: edge-to-edge images, see LocalReaderBleed
+                        .bleed(LocalReaderBleed.current)
                         .clip(RectangleShape)
                         .clickable(
                             enabled = linearImage.link != null,
@@ -672,15 +681,32 @@ fun LinearTextContent(
                     MaterialTheme.colorScheme.onSurface,
                     MaterialTheme.colorScheme.primary,
                 )
+            // Fork: matches of the reader's find in article
+            val findRanges = LocalFindHighlights.current[linearText]
+            val findColor = MaterialTheme.colorScheme.primary
+            val onFindColor = MaterialTheme.colorScheme.onPrimary
             val annotatedString =
-                remember(original, range, highlightColor) {
-                    if (range == null) {
+                remember(original, range, highlightColor, findRanges, findColor, onFindColor) {
+                    if (range == null && findRanges == null) {
                         original
                     } else {
                         AnnotatedString
                             .Builder(original)
                             .apply {
-                                addStyle(SpanStyle(background = highlightColor), range.first, (range.last + 1).coerceAtMost(original.length))
+                                if (range != null) {
+                                    addStyle(SpanStyle(background = highlightColor), range.first, (range.last + 1).coerceAtMost(original.length))
+                                }
+                                findRanges?.forEach { (match, current) ->
+                                    addStyle(
+                                        if (current) {
+                                            SpanStyle(background = findColor, color = onFindColor)
+                                        } else {
+                                            SpanStyle(background = findColor.copy(alpha = 0.25f))
+                                        },
+                                        match.first,
+                                        (match.last + 1).coerceAtMost(original.length),
+                                    )
+                                }
                             }.toAnnotatedString()
                     }
                 }
@@ -697,6 +723,16 @@ fun LinearTextContent(
                         }
                 },
                 softWrap = softWrap,
+                // Fork: Android breaks justified lines with the style's letter spacing but draws them
+                // without it, so every line ends short and the right margin looks wider than the left
+                letterSpacing = if (typographySettings.justifyText) 0.sp else TextUnit.Unspecified,
+                // Fork: hyphenate justified text so lines don't get large gaps between words
+                style =
+                    if (typographySettings.justifyText) {
+                        LocalTextStyle.current.merge(TextStyle(hyphens = Hyphens.Auto, lineBreak = LineBreak.Paragraph))
+                    } else {
+                        LocalTextStyle.current
+                    },
                 textAlign =
                     if (typographySettings.justifyText) {
                         TextAlign.Justify

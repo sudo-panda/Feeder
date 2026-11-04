@@ -1,7 +1,6 @@
 package com.nononsenseapps.feeder.ui.compose.settings
 
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
@@ -37,7 +36,6 @@ import androidx.compose.material.icons.automirrored.outlined.Sort
 import androidx.compose.material.icons.automirrored.outlined.WrapText
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.outlined.Animation
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.BatteryChargingFull
 import androidx.compose.material.icons.outlined.BatterySaver
@@ -54,6 +52,7 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Palette
+import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Swipe
@@ -116,6 +115,7 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.shouldShowRationale
 import com.nononsenseapps.feeder.R
+import com.nononsenseapps.feeder.archmodel.AccentColor
 import com.nononsenseapps.feeder.archmodel.DarkThemePreferences
 import com.nononsenseapps.feeder.archmodel.FeedItemStyle
 import com.nononsenseapps.feeder.archmodel.ItemOpener
@@ -129,6 +129,7 @@ import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
 import com.nononsenseapps.feeder.ui.compose.dialog.EditableListDialog
 import com.nononsenseapps.feeder.ui.compose.dialog.FeedNotificationsDialog
 import com.nononsenseapps.feeder.ui.compose.feed.ExplainPermissionDialog
+import com.nononsenseapps.feeder.ui.compose.readaloud.ReadAloudSettingsSheet
 import com.nononsenseapps.feeder.ui.compose.theme.LocalDimens
 import com.nononsenseapps.feeder.ui.compose.theme.LocalTypographySettings
 import com.nononsenseapps.feeder.ui.compose.theme.SensibleTopAppBar
@@ -245,8 +246,8 @@ fun SettingsScreen(
             onUseInAppAudioPlayerChange = settingsViewModel::setUseInAppAudioPlayer,
             batteryOptimizationIgnoredValue = viewState.batteryOptimizationIgnored,
             onOpenSyncSettings = onNavigateToSyncScreen,
-            useDynamicTheme = viewState.useDynamicTheme,
-            onUseDynamicTheme = settingsViewModel::setUseDynamicTheme,
+            accentColor = viewState.accentColor,
+            onAccentColorChange = settingsViewModel::setAccentColor,
             onBlockListAdd = settingsViewModel::addToBlockList,
             onBlockListRemove = settingsViewModel::removeFromBlockList,
             feedsSettings = ImmutableHolder(viewState.feedsSettings),
@@ -351,8 +352,8 @@ private fun SettingsScreenPreview() {
             onUseInAppAudioPlayerChange = {},
             batteryOptimizationIgnoredValue = false,
             onOpenSyncSettings = {},
-            useDynamicTheme = true,
-            onUseDynamicTheme = {},
+            accentColor = AccentColor.DEFAULT,
+            onAccentColorChange = {},
             onBlockListAdd = {},
             onBlockListRemove = {},
             feedsSettings = ImmutableHolder(emptyList()),
@@ -444,8 +445,8 @@ fun SettingsList(
     onUseInAppAudioPlayerChange: (Boolean) -> Unit,
     batteryOptimizationIgnoredValue: Boolean,
     onOpenSyncSettings: () -> Unit,
-    useDynamicTheme: Boolean,
-    onUseDynamicTheme: (Boolean) -> Unit,
+    accentColor: AccentColor,
+    onAccentColorChange: (AccentColor) -> Unit,
     onBlockListAdd: (String) -> Unit,
     onBlockListRemove: (String) -> Unit,
     feedsSettings: ImmutableHolder<List<UIFeedSettings>>,
@@ -493,11 +494,6 @@ fun SettingsList(
 ) {
     val scrollState = rememberScrollState()
     val dimens = LocalDimens.current
-    val isAndroidSAndAbove =
-        remember {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-        }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -524,25 +520,13 @@ fun SettingsList(
                     .width(dimens.maxContentWidth),
         )
 
-        SwitchSetting(
-            title = stringResource(id = R.string.dynamic_theme_use),
-            icon = { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) },
-            checked = useDynamicTheme,
-            onCheckedChange = onUseDynamicTheme,
-            description =
-                when {
-                    isAndroidSAndAbove -> {
-                        null
-                    }
-
-                    else -> {
-                        stringResource(
-                            id = R.string.only_available_on_android_n,
-                            "12",
-                        )
-                    }
-                },
-            enabled = isAndroidSAndAbove,
+        // Fork: accent colour instead of the dynamic colors switch
+        AccentColorSetting(
+            accentColor = accentColor,
+            onAccentColorChange = onAccentColorChange,
+            modifier =
+                Modifier
+                    .width(dimens.maxContentWidth),
         )
 
         MenuSetting(
@@ -943,6 +927,17 @@ fun SettingsList(
                 onCheckedChange = onUseDetectLanguageChange,
                 description = stringResource(id = R.string.description_for_read_aloud),
             )
+            // Fork: the same panel as the read aloud player's settings button
+            var showReadAloudSettings by rememberSaveable { mutableStateOf(false) }
+            ExternalSetting(
+                stringResource(R.string.read_aloud_settings_summary),
+                title = stringResource(R.string.read_aloud_settings),
+                icon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null) },
+                onClick = { showReadAloudSettings = true },
+            )
+            if (showReadAloudSettings) {
+                ReadAloudSettingsSheet(onDismiss = { showReadAloudSettings = false })
+            }
         }
 
         HorizontalDivider(modifier = Modifier.width(dimens.maxContentWidth))

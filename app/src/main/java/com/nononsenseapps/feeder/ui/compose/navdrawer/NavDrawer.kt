@@ -21,23 +21,31 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DynamicFeed
-import androidx.compose.material.icons.outlined.RssFeed
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,10 +53,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -69,22 +75,20 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.size.Precision
-import coil3.size.Scale
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.db.room.ID_ALL_FEEDS
 import com.nononsenseapps.feeder.db.room.ID_SAVED_ARTICLES
 import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.model.FeedUnreadCount
-import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
+import com.nononsenseapps.feeder.ui.compose.components.FeedAvatar
+import com.nononsenseapps.feeder.ui.compose.deletefeed.DeletableFeed
+import com.nononsenseapps.feeder.ui.compose.deletefeed.DeleteFeedDialog
 import com.nononsenseapps.feeder.ui.compose.material3.DismissibleDrawerSheet
 import com.nononsenseapps.feeder.ui.compose.material3.DismissibleNavigationDrawer
 import com.nononsenseapps.feeder.ui.compose.material3.DrawerState
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
+import com.nononsenseapps.feeder.ui.compose.utils.ImmutableHolder
 import com.nononsenseapps.feeder.ui.compose.utils.onKeyEventLikeEscape
-import com.nononsenseapps.feeder.util.logDebug
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
@@ -99,9 +103,21 @@ fun ScreenWithNavDrawer(
     modifier: Modifier = Modifier,
     selectedId: Long? = null,
     selectedTag: String = "",
+    onAddFeed: (() -> Unit)? = null,
+    onEditFeed: (Long) -> Unit = {},
+    onDeleteFeeds: (Iterable<Long>) -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val coroutineScope = rememberCoroutineScope()
+    // Fork: Boost-style edit mode for the feed list
+    var editMode by rememberSaveable { mutableStateOf(false) }
+    var feedToDelete by remember { mutableStateOf<DeletableFeed?>(null) }
+
+    LaunchedEffect(drawerState.isOpen) {
+        if (!drawerState.isOpen) {
+            editMode = false
+        }
+    }
 
     LaunchedEffect(drawerState.isOpen) {
         if (drawerState.isOpen) {
@@ -135,11 +151,34 @@ fun ScreenWithNavDrawer(
                             .focusRequester(focusRequester),
                     selectedId = selectedId,
                     selectedTag = selectedTag,
+                    editMode = editMode,
+                    onToggleEditMode = onAddFeed?.let { { editMode = !editMode } },
+                    onAddFeed = {
+                        coroutineScope.launch {
+                            drawerState.close()
+                            onAddFeed?.invoke()
+                        }
+                    },
+                    onEditFeed = { feedId ->
+                        coroutineScope.launch {
+                            drawerState.close()
+                            onEditFeed(feedId)
+                        }
+                    },
+                    onDeleteFeed = { feedId, title -> feedToDelete = DeletableFeed(feedId, title) },
                 )
             }
         },
         content = content,
     )
+
+    feedToDelete?.let { feed ->
+        DeleteFeedDialog(
+            feeds = ImmutableHolder(listOf(feed)),
+            onDismiss = { feedToDelete = null },
+            onDelete = onDeleteFeeds,
+        )
+    }
 }
 
 // Fork: Material 3 style drawer: app name header, pill-shaped rows with the current feed or
@@ -154,6 +193,11 @@ fun ListOfFeedsAndTags(
     modifier: Modifier = Modifier,
     selectedId: Long? = null,
     selectedTag: String = "",
+    editMode: Boolean = false,
+    onToggleEditMode: (() -> Unit)? = null,
+    onAddFeed: () -> Unit = {},
+    onEditFeed: (Long) -> Unit = {},
+    onDeleteFeed: (Long, String) -> Unit = { _, _ -> },
 ) {
     fun FeedUnreadCount.isSelected(): Boolean =
         when (contentType) {
@@ -173,15 +217,19 @@ fun ListOfFeedsAndTags(
                 },
     ) {
         item(key = "header", contentType = "header") {
-            Text(
-                text = stringResource(id = R.string.app_name),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier =
-                    Modifier
-                        .padding(start = 28.dp, end = 16.dp, top = 20.dp, bottom = 12.dp)
-                        .semantics { heading() },
-            )
+            DrawerHeader(editMode = editMode, onToggleEditMode = onToggleEditMode)
+        }
+        if (editMode) {
+            item(key = "addFeed", contentType = "addFeed") {
+                DrawerRow(
+                    title = stringResource(id = R.string.add_feed),
+                    unreadCount = 0,
+                    selected = false,
+                    onClick = onAddFeed,
+                    titleWeight = FontWeight.SemiBold,
+                    leading = { Icon(Icons.Outlined.AddCircleOutline, contentDescription = null) },
+                )
+            }
         }
         items(
             count = feedsAndTags.itemCount,
@@ -246,9 +294,20 @@ fun ListOfFeedsAndTags(
                         DrawerRow(
                             title = item.displayTitle,
                             unreadCount = item.unreadCount,
-                            selected = item.isSelected(),
-                            onClick = { onItemClick(item) },
-                            leading = { FeedIcon(imageUrl = item.imageUrl?.toString()) },
+                            selected = item.isSelected() && !editMode,
+                            onClick = { if (editMode) onEditFeed(item.id) else onItemClick(item) },
+                            leading = { FeedAvatar(feedTitle = item.displayTitle, imageUrl = item.imageUrl?.toString(), size = 24.dp) },
+                            trailing =
+                                if (editMode) {
+                                    {
+                                        FeedEditButtons(
+                                            onEdit = { onEditFeed(item.id) },
+                                            onDelete = { onDeleteFeed(item.id, item.displayTitle) },
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
                             modifier =
                                 if (item.contentType == ContentType.ChildFeed) {
                                     Modifier.padding(start = 16.dp)
@@ -309,6 +368,7 @@ private fun DrawerRow(
     modifier: Modifier = Modifier,
     leadingModifier: Modifier = Modifier,
     titleWeight: FontWeight? = null,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val colors = MaterialTheme.colorScheme
     val textColor =
@@ -335,7 +395,7 @@ private fun DrawerRow(
                 .background(if (selected) colors.secondaryContainer else Color.Transparent)
                 .clickable(onClick = onClick, role = Role.Button)
                 .semantics { this.selected = selected }
-                .padding(start = 4.dp, end = 16.dp),
+                .padding(start = 4.dp, end = if (trailing != null) 0.dp else 16.dp),
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -357,7 +417,9 @@ private fun DrawerRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        if (unreadCount > 0) {
+        if (trailing != null) {
+            trailing()
+        } else if (unreadCount > 0) {
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = "%d".format(LocalConfiguration.current.locales[0], unreadCount),
@@ -421,38 +483,6 @@ private fun TagRow(
 }
 
 @Composable
-private fun FeedIcon(imageUrl: String?) {
-    val fallback = rememberTintedVectorPainter(Icons.Outlined.RssFeed)
-    if (imageUrl == null) {
-        Icon(Icons.Outlined.RssFeed, contentDescription = null, modifier = Modifier.size(22.dp))
-        return
-    }
-    val pixels = with(LocalDensity.current) { 22.dp.roundToPx() }
-    AsyncImage(
-        model =
-            ImageRequest
-                .Builder(LocalContext.current)
-                .data(imageUrl)
-                .listener(
-                    onError = { a, b ->
-                        logDebug("FEEDER_DRAWER", "error ${a.data}", b.throwable)
-                    },
-                ).scale(Scale.FIT)
-                .size(pixels)
-                .precision(Precision.INEXACT)
-                .build(),
-        placeholder = fallback,
-        error = fallback,
-        contentDescription = stringResource(id = R.string.feed_icon),
-        contentScale = ContentScale.Crop,
-        modifier =
-            Modifier
-                .size(22.dp)
-                .clip(RoundedCornerShape(6.dp)),
-    )
-}
-
-@Composable
 private fun Placeholder() {
     Box(
         modifier =
@@ -480,8 +510,62 @@ private fun DrawerRowsPreview() {
                 unreadCount = 0,
                 selected = false,
                 onClick = {},
-                leading = { FeedIcon(imageUrl = null) },
+                leading = { FeedAvatar(feedTitle = "A feed", imageUrl = null, size = 24.dp) },
                 modifier = Modifier.padding(start = 16.dp),
+            )
+        }
+    }
+}
+
+// Fork: app name with an Edit/Done switch, like Boost's subscription list
+@Composable
+private fun DrawerHeader(
+    editMode: Boolean,
+    onToggleEditMode: (() -> Unit)?,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(start = 28.dp, end = 12.dp, top = 8.dp, bottom = 0.dp),
+    ) {
+        Text(
+            text = stringResource(id = R.string.app_name),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(vertical = 12.dp)
+                    .semantics { heading() },
+        )
+        if (onToggleEditMode != null) {
+            TextButton(onClick = onToggleEditMode) {
+                Icon(
+                    if (editMode) Icons.Outlined.Check else Icons.Outlined.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(stringResource(if (editMode) R.string.fork_edit_feeds_done else R.string.fork_edit_feeds))
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeedEditButtons(
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Row {
+        IconButton(onClick = onEdit) {
+            Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.edit_feed), modifier = Modifier.size(20.dp))
+        }
+        IconButton(onClick = onDelete) {
+            Icon(
+                Icons.Outlined.Delete,
+                contentDescription = stringResource(R.string.delete_feed),
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(20.dp),
             )
         }
     }

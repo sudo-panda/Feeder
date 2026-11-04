@@ -1,6 +1,9 @@
 package com.nononsenseapps.feeder.ui
 
+import com.nononsenseapps.feeder.archmodel.AccentColor
 import com.nononsenseapps.feeder.archmodel.DarkThemePreferences
+import com.nononsenseapps.feeder.archmodel.ListAppearance
+import com.nononsenseapps.feeder.archmodel.ReaderAppearance
 import com.nononsenseapps.feeder.archmodel.Repository
 import com.nononsenseapps.feeder.archmodel.ThemeOptions
 import com.nononsenseapps.feeder.base.DIAwareViewModel
@@ -20,8 +23,9 @@ class CommonActivityViewModel(
     val darkThemePreference: StateFlow<DarkThemePreferences> =
         repository.preferredDarkTheme
 
-    val dynamicColors: StateFlow<Boolean> =
-        repository.useDynamicTheme
+    // Fork: replaces dynamicColors
+    val accentColor: StateFlow<AccentColor> =
+        repository.accentColor
 
     val textScale: StateFlow<Float> =
         repository.textScale
@@ -31,4 +35,12 @@ class CommonActivityViewModel(
 
     val justifyText: StateFlow<Boolean> =
         repository.justifyText
+
+    // Fork: see ReaderAppearance
+    val readerAppearance: StateFlow<ReaderAppearance> =
+        repository.readerAppearance
+
+    // Fork: see ListAppearance
+    val listAppearance: StateFlow<ListAppearance> =
+        repository.listAppearance
 }

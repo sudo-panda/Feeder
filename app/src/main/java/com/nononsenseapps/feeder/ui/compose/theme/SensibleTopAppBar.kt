@@ -2,6 +2,7 @@ package com.nononsenseapps.feeder.ui.compose.theme
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -10,6 +11,8 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
@@ -29,6 +32,9 @@ fun SensibleTopAppBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
+    // Fork: the reader uses its page colour and a smaller title
+    containerColor: Color = MaterialTheme.colorScheme.background,
+    titleStyle: TextStyle? = null,
 ) {
     TopAppBar(
         scrollBehavior = scrollBehavior,
@@ -38,6 +44,7 @@ fun SensibleTopAppBar(
                     title,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    style = titleStyle ?: LocalTextStyle.current,
                 )
             }
         },
@@ -46,7 +53,7 @@ fun SensibleTopAppBar(
         modifier = modifier,
         colors =
             topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
+                containerColor = containerColor,
                 scrolledContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
             ),
     )

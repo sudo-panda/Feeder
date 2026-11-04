@@ -6,11 +6,13 @@ builds a signed APK for every change. Upstream: <https://github.com/spacecowboy/
 ## How changes reach the phone
 
 1. Ask Claude (Claude Code, from the Claude app) for a change. Claude works on a
-   `claude/*` branch, bumps the fork build number, and opens a pull request.
-2. The **Fork build** workflow lints, tests and builds every branch push.
-3. Each push to the pull request also publishes a beta, to try it on the phone first
+   `claude/*` branch, bumps the fork build number, and opens a **draft** pull request.
+2. Each push to the pull request publishes a beta, to try it on the phone first
    (see [Beta channel](#beta-channel)).
-4. Merge the pull request in the GitHub app.
+3. When you're happy, mark the pull request *Ready for review*. The **Fork build**
+   workflow then lints, tests and builds the real (shrunk) release, and again on every
+   later push. Drafts skip it, so betas stay the only build while iterating.
+4. Once Fork build is green, merge the pull request in the GitHub app.
 5. The workflow builds the release APK on `master`, signs it in a separate job,
    publishes it as a GitHub release `v<version>`, and updates a self-hosted F-Droid
    repository on GitHub Pages: `https://sudo-panda.github.io/Feeder/repo`.

@@ -1,6 +1,8 @@
 # Builds this fork. See FORK.md.
 #
-# - Any branch: lint + unit tests + release build (no secrets involved).
+# - Pull requests that are ready for review (not drafts): lint + unit tests + the shrunk
+#   release build, on every push. No secrets involved. Drafts only get betas
+#   (fork_beta.yml), so iterating stays quick; mark the pull request ready before merging.
 # - master: release build, then, only if the version (see fork.properties) is new:
 #   sign the APK, publish the GitHub release, and rebuild the F-Droid repo
 #   (fork_fdroid.yml).
@@ -15,7 +17,9 @@ name: Fork build
 
 on:
   push:
-    branches: ["**"]
+    branches: [master]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions: {}
@@ -26,6 +30,10 @@ concurrency:
 
 jobs:
   build:
+    # Skips draft pull requests and pull requests from other people's forks
+    if: >-
+      github.event_name != 'pull_request' ||
+      (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
