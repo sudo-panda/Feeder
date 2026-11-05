@@ -43,4 +43,8 @@
   <string name="fork_add_short">Add</string>
   <!-- Also in debug builds, whose app name is FeederD -->
   <string name="fork_drawer_title" translatable="false">Feeder</string>
+  <string name="fork_add_feed_placeholder">Website or feed address</string>
+  <string name="fork_add_feed_hint_title">Follow a website</string>
+  <string name="fork_add_feed_hint_body">Type a site like example.com and Feeder looks for its feeds as you type, or paste a link to an RSS, Atom or JSON feed.</string>
+  <string name="fork_add_feed_found">Feeds found</string>
 </resources>

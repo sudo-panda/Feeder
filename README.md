@@ -36,6 +36,9 @@
 > - **Sidebar header and edit mode:** the app's logo in the accent colour next to its name.
 >   Under the line below *Saved articles* are *Add* and *Edit*; *Edit* shows an edit and
 >   a delete button on every feed, like Boost. These left the feed screen's ⋮ menu.
+> - **Add feed page:** a rounded search field that searches by itself once you stop typing an
+>   address, a short how-to, and result cards with feed avatars. The sidebar stays open behind
+>   the Add and Edit pages.
 > - **List appearance:** title size, text size and icon size of the article list, from the feed screen's
 >   ⋮ menu.
 > - **Hiding mark-all-as-read button:** it slides away while you scroll down and comes back

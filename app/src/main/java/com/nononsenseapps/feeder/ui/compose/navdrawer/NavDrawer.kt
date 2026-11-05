@@ -162,18 +162,9 @@ fun ScreenWithNavDrawer(
                     selectedTag = selectedTag,
                     editMode = editMode,
                     onToggleEditMode = onAddFeed?.let { { editMode = !editMode } },
-                    onAddFeed = {
-                        coroutineScope.launch {
-                            drawerState.close()
-                            onAddFeed?.invoke()
-                        }
-                    },
-                    onEditFeed = { feedId ->
-                        coroutineScope.launch {
-                            drawerState.close()
-                            onEditFeed(feedId)
-                        }
-                    },
+                    // Fork: the sidebar stays open under the new page, so Back returns to it
+                    onAddFeed = { onAddFeed?.invoke() },
+                    onEditFeed = onEditFeed,
                     onDeleteFeed = { feedId, title -> feedToDelete = DeletableFeed(feedId, title) },
                 )
             }
