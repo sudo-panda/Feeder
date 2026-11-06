@@ -75,6 +75,8 @@ fun FeedItemCompact(
                 maxLines = maxLines,
                 showOnlyTitle = showOnlyTitle,
                 showReadingTime = showReadingTime,
+                // Fork: the feed's round icon next to its name, like the cards
+                showFeedAvatar = true,
                 modifier =
                     Modifier
                         .requiredHeightIn(min = minimumTouchSize)

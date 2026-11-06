@@ -46,12 +46,12 @@ fun FeedItemSuperCompact(
             // Fork: shorter rows, with just the title and the feed and time line
             modifier = Modifier.padding(vertical = 6.dp, horizontal = LocalDimens.current.margin),
         ) {
-            // Fork: no empty indent when there is no feed icon or saved star to show
-            if ((item.bookmarked && bookmarkIndicator) || item.feedImageUrl != null) {
+            // Fork: only the saved star in front; the feed's round icon is next to its name
+            if (item.bookmarked && bookmarkIndicator) {
                 FeedItemEitherIndicator(
-                    bookmarked = item.bookmarked && bookmarkIndicator,
+                    bookmarked = true,
                     itemImage = null,
-                    feedImageUrl = item.feedImageUrl?.toString(),
+                    feedImageUrl = null,
                     size = 24.dp,
                 )
             }
@@ -69,6 +69,7 @@ fun FeedItemSuperCompact(
                 maxLines = 1,
                 showOnlyTitle = true,
                 showReadingTime = showReadingTime,
+                showFeedAvatar = true,
             )
         }
     }

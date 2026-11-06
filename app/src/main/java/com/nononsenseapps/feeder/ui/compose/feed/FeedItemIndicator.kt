@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Circle
@@ -137,10 +138,12 @@ fun FeedItemFeedIconIndicator(
             error = rememberTintedVectorPainter(Icons.Outlined.ErrorOutline),
             // Don't list this in screen reader
             contentDescription = null,
-            contentScale = ContentScale.Fit,
+            // Fork: feed logos are always round
+            contentScale = ContentScale.Crop,
             modifier =
                 Modifier
-                    .size(size),
+                    .size(size)
+                    .clip(CircleShape),
         )
     }
 }

@@ -89,6 +89,15 @@ private val gradientStops =
         1f to Color.Black.copy(alpha = 0.9f),
     )
 
+// Fork: read cards are darker all over, and darkest behind the text
+private val readGradientStops =
+    arrayOf(
+        0f to Color.Black.copy(alpha = 0.25f),
+        0.3f to Color.Black.copy(alpha = 0.4f),
+        0.6f to Color.Black.copy(alpha = 0.75f),
+        1f to Color.Black.copy(alpha = 0.95f),
+    )
+
 @Composable
 fun FeedItemCompactCard(
     state: FeedItemState,
@@ -116,7 +125,7 @@ fun FeedItemCompactCard(
                     }
                 val gradient =
                     Brush.verticalGradient(
-                        colorStops = gradientStops,
+                        colorStops = if (state.item.unread) gradientStops else readGradientStops,
                         startY = 0f,
                         endY = sizePx.height.pxOrElse { 0 }.toFloat(),
                     )
