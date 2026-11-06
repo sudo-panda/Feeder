@@ -3,6 +3,8 @@ package com.nononsenseapps.feeder.ui.compose.feed
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -84,7 +86,7 @@ fun ListAppearanceSheet(onDismiss: () -> Unit) {
                 onChange = { repository.setListAppearance(appearance.copy(titleScale = it)) },
             )
             SliderRow(
-                label = stringResource(R.string.text_scale),
+                label = stringResource(R.string.fork_text_size),
                 value = appearance.textScale,
                 range = 0.8f..1.5f,
                 steps = 6,
@@ -93,8 +95,9 @@ fun ListAppearanceSheet(onDismiss: () -> Unit) {
             SliderRow(
                 label = stringResource(R.string.icon_size),
                 value = appearance.iconScale,
-                range = 0.8f..1.4f,
-                steps = 5,
+                range = 0.8f..1.5f,
+                steps = 6,
+                marker = Icons.Outlined.StarBorder,
                 onChange = { repository.setListAppearance(appearance.copy(iconScale = it)) },
             )
         }

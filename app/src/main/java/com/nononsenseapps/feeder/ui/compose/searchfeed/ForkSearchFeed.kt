@@ -15,8 +15,7 @@ import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -38,10 +37,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.ui.compose.components.FeedAvatar
+import com.nononsenseapps.feeder.ui.compose.components.ForkSectionHeaderStyle
 
 // Fork: Boost-style Add feed page: a rounded search field, a short how-to, and result cards with feed avatars
 
-private val CardShape = RoundedCornerShape(12.dp)
+// Same as the article cards
+private val CardShape = RoundedCornerShape(6.dp)
 
 @Composable
 fun ForkFeedSearchField(
@@ -79,9 +80,10 @@ fun ForkFeedSearchField(
         shape = RoundedCornerShape(28.dp),
         colors =
             OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                unfocusedBorderColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                // Same white (or dark grey) as the cards, with a soft outline, so it stands out from the page
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
             ),
         keyboardOptions =
             KeyboardOptions(
@@ -130,8 +132,7 @@ fun ForkSectionLabel(
 ) {
     Text(
         text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+        style = ForkSectionHeaderStyle,
         modifier = modifier.fillMaxWidth().padding(top = 8.dp, start = 4.dp),
     )
 }
@@ -145,10 +146,9 @@ fun ForkSearchResultCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    ElevatedCard(
         onClick = onClick,
         shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
@@ -201,9 +201,8 @@ fun ForkSearchErrorCard(
     onAddAnyway: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    ElevatedCard(
         shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(

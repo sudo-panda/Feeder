@@ -70,6 +70,7 @@ import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
 import com.nononsenseapps.feeder.ui.compose.components.FeedAvatar
 import com.nononsenseapps.feeder.ui.compose.components.ForkActionButton
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
+import com.nononsenseapps.feeder.ui.compose.components.textIconSize
 import com.nononsenseapps.feeder.ui.compose.feedarticle.wordsToReadTimeSecs
 import com.nononsenseapps.feeder.ui.compose.minimumTouchSize
 import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
@@ -77,6 +78,7 @@ import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemDateStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemFeedTitleStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemSnippetTextStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemTitleTextStyle
+import com.nononsenseapps.feeder.ui.compose.theme.LocalListAppearance
 import com.nononsenseapps.feeder.ui.compose.theme.LocalListIconScale
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.theme.titleFontWeight
@@ -128,7 +130,8 @@ fun FeedItemCard(
                             fontWeight = if (item.unread) FontWeight.Bold else FontWeight.Normal,
                             // Like Boost, only the title shows that an article was read
                             color = if (item.unread) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = maxLines,
+                            // One more line for big titles, so they don't lose most of their words
+                            maxLines = if (LocalListAppearance.current.titleScale > 1.2f) maxLines + 1 else maxLines,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -231,7 +234,7 @@ private fun FeedItemCardMetaLine(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        FeedAvatar(feedTitle = item.feedTitle, imageUrl = item.feedImageUrl?.toString(), size = 16.dp * LocalListIconScale.current)
+        FeedAvatar(feedTitle = item.feedTitle, imageUrl = item.feedImageUrl?.toString(), size = textIconSize(MaterialTheme.typography.labelMedium, 16f / 12f))
         WithBidiDeterminedLayoutDirection(paragraph = meta) {
             Text(
                 text = meta,

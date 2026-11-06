@@ -78,6 +78,7 @@ import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -125,6 +126,7 @@ import com.nononsenseapps.feeder.archmodel.SwipeAsRead
 import com.nononsenseapps.feeder.archmodel.SyncFrequency
 import com.nononsenseapps.feeder.archmodel.ThemeOptions
 import com.nononsenseapps.feeder.localtranslation.LanguagePairInfo
+import com.nononsenseapps.feeder.ui.compose.components.ForkSectionHeaderStyle
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
 import com.nononsenseapps.feeder.ui.compose.dialog.EditableListDialog
 import com.nononsenseapps.feeder.ui.compose.dialog.FeedNotificationsDialog
@@ -1083,12 +1085,8 @@ fun GroupTitle(
                     .height(height),
             contentAlignment = Alignment.CenterStart,
         ) {
-            ProvideTextStyle(
-                value =
-                    MaterialTheme.typography.labelMedium.merge(
-                        TextStyle(color = MaterialTheme.colorScheme.primary),
-                    ),
-            ) {
+            // Fork: the shared section header style
+            ProvideTextStyle(value = ForkSectionHeaderStyle) {
                 title(Modifier.semantics { heading() })
             }
         }
@@ -1589,6 +1587,8 @@ fun SwitchSetting(
             onCheckedChange = onCheckedChange,
             modifier = Modifier.clearAndSetSemantics { },
             enabled = enabled,
+            // Fork: the default off track is nearly the page's grey; use the card colour instead
+            colors = SwitchDefaults.colors(uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerLow),
         )
     }
 }

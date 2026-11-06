@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -17,12 +18,17 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,14 +69,16 @@ fun ReaderAppearanceSheet(
                 range = 0.8f..1.6f,
                 steps = 7,
                 onChange = { repository.setReaderAppearance(appearance.copy(titleScale = it)) },
+                applyWhenReleased = true,
             )
             // Same range and steps as the text scale in Settings → Text
             SliderRow(
-                label = stringResource(R.string.text_scale),
+                label = stringResource(R.string.fork_text_size),
                 value = textScale,
                 range = 1f..2f,
                 steps = 9,
                 onChange = repository::setTextScale,
+                applyWhenReleased = true,
             )
             SliderRow(
                 label = stringResource(R.string.line_spacing),
@@ -78,6 +86,7 @@ fun ReaderAppearanceSheet(
                 range = 0.9f..1.6f,
                 steps = 6,
                 onChange = { repository.setReaderAppearance(appearance.copy(lineSpacing = it)) },
+                applyWhenReleased = true,
             )
             SwitchRow(
                 label = stringResource(R.string.justify_article_text),
@@ -119,14 +128,24 @@ internal fun SliderRow(
     range: ClosedFloatingPointRange<Float>,
     steps: Int,
     onChange: (Float) -> Unit,
+    applyWhenReleased: Boolean = false,
+    marker: ImageVector? = null,
 ) {
+    // Fork: with applyWhenReleased the value is only applied when the drag ends, for settings that
+    // re-lay out the whole article
+    var dragValue by remember { mutableStateOf<Float?>(null) }
     Column(modifier = Modifier.padding(horizontal = 24.dp)) {
         Text(label, style = MaterialTheme.typography.titleSmall)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SizeLetter(13.sp)
+            // Small and large "A", or the given icon, at the ends
+            if (marker != null) SizeIcon(marker, 16.dp) else SizeLetter(13.sp)
             Slider(
-                value = value.coerceIn(range),
-                onValueChange = onChange,
+                value = (dragValue ?: value).coerceIn(range),
+                onValueChange = { if (applyWhenReleased) dragValue = it else onChange(it) },
+                onValueChangeFinished = {
+                    dragValue?.let(onChange)
+                    dragValue = null
+                },
                 valueRange = range,
                 steps = steps,
                 modifier =
@@ -134,9 +153,17 @@ internal fun SliderRow(
                         .weight(1f)
                         .padding(horizontal = 12.dp),
             )
-            SizeLetter(22.sp)
+            if (marker != null) SizeIcon(marker, 26.dp) else SizeLetter(22.sp)
         }
     }
+}
+
+@Composable
+private fun SizeIcon(
+    icon: ImageVector,
+    size: Dp,
+) {
+    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(size))
 }
 
 @Composable

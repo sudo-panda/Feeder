@@ -89,6 +89,7 @@ import com.nononsenseapps.feeder.db.room.ID_SAVED_ARTICLES
 import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.model.FeedUnreadCount
 import com.nononsenseapps.feeder.ui.compose.components.FeedAvatar
+import com.nononsenseapps.feeder.ui.compose.components.textIconSize
 import com.nononsenseapps.feeder.ui.compose.deletefeed.DeletableFeed
 import com.nononsenseapps.feeder.ui.compose.deletefeed.DeleteFeedDialog
 import com.nononsenseapps.feeder.ui.compose.material3.DismissibleDrawerSheet
@@ -263,7 +264,7 @@ fun ListOfFeedsAndTags(
                                 unreadCount = item.unreadCount,
                                 selected = item.isSelected(),
                                 onClick = { onItemClick(item) },
-                                leading = { Icon(Icons.Outlined.DynamicFeed, contentDescription = null) },
+                                leading = { Icon(Icons.Outlined.DynamicFeed, contentDescription = null, modifier = Modifier.size(rowIconSize())) },
                             )
                         }
 
@@ -273,7 +274,7 @@ fun ListOfFeedsAndTags(
                                 unreadCount = item.unreadCount,
                                 selected = item.isSelected(),
                                 onClick = { onItemClick(item) },
-                                leading = { Icon(Icons.Outlined.StarOutline, contentDescription = null) },
+                                leading = { Icon(Icons.Outlined.StarOutline, contentDescription = null, modifier = Modifier.size(rowIconSize())) },
                             )
                         }
 
@@ -294,7 +295,7 @@ fun ListOfFeedsAndTags(
                                 unreadCount = item.unreadCount,
                                 selected = item.isSelected() && !editMode,
                                 onClick = { if (editMode) onEditFeed(item.id) else onItemClick(item) },
-                                leading = { FeedAvatar(feedTitle = item.displayTitle, imageUrl = item.imageUrl?.toString(), size = 24.dp) },
+                                leading = { FeedAvatar(feedTitle = item.displayTitle, imageUrl = item.imageUrl?.toString(), size = rowIconSize()) },
                                 trailing =
                                     if (editMode) {
                                         {
@@ -464,7 +465,7 @@ private fun TagRow(
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                modifier = Modifier.rotate(angle),
+                modifier = Modifier.size(rowIconSize()).rotate(angle),
             )
         },
         modifier =
@@ -501,7 +502,7 @@ private fun DrawerRowsPreview() {
                 unreadCount = 99,
                 selected = true,
                 onClick = {},
-                leading = { Icon(Icons.Outlined.DynamicFeed, contentDescription = null) },
+                leading = { Icon(Icons.Outlined.DynamicFeed, contentDescription = null, modifier = Modifier.size(rowIconSize())) },
             )
             TagRow(title = "News", unreadCount = 12, expanded = true, selected = false, onToggleExpansion = {}, onClick = {})
             DrawerRow(
@@ -560,7 +561,7 @@ private fun DrawerFeedButtons(
         // Shows "Add", TalkBack says "Add feed"
         val addFeedLabel = stringResource(R.string.add_feed)
         TextButton(onClick = onAddFeed) {
-            Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(buttonIconSize()))
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 stringResource(R.string.fork_add_short),
@@ -571,7 +572,7 @@ private fun DrawerFeedButtons(
             Icon(
                 if (editMode) Icons.Outlined.Check else Icons.Outlined.Edit,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(buttonIconSize()),
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(stringResource(if (editMode) R.string.fork_edit_feeds_done else R.string.fork_edit_feeds))
@@ -586,15 +587,28 @@ private fun FeedEditButtons(
 ) {
     Row {
         IconButton(onClick = onEdit) {
-            Icon(Icons.Outlined.Edit, contentDescription = stringResource(R.string.edit_feed), modifier = Modifier.size(20.dp))
+            Icon(
+                Icons.Outlined.Edit,
+                contentDescription = stringResource(R.string.edit_feed),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp),
+            )
         }
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Outlined.Delete,
                 contentDescription = stringResource(R.string.delete_feed),
                 tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(22.dp),
             )
         }
     }
 }
+
+// Fork: icons next to text follow the text size: 24dp next to the rows' 14sp labels
+@Composable
+private fun rowIconSize() = textIconSize(MaterialTheme.typography.labelLarge, 24f / 14f)
+
+// 18dp next to the Add and Edit buttons' 14sp labels
+@Composable
+private fun buttonIconSize() = textIconSize(MaterialTheme.typography.labelLarge, 18f / 14f)

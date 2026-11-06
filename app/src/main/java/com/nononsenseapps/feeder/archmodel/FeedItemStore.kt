@@ -384,14 +384,13 @@ class FeedItemStore(
                 append("WHERE\n")
                 rawQueryFilter(filter, search, args, minReadTime, feedId, tag)
                 append("AND feed_items.id IS NOT ?\n").also { args.add(itemId) }
+                // Range on primary_sort_time first, so SQLite walks idx_feed_items_cursor from the
+                // current article instead of sorting the whole table
+                append("AND primary_sort_time $compare= ?\n").also { args.add(current.primarySortTime.toEpochMilli()) }
                 append("AND (\n")
                 append("primary_sort_time $compare ?\n").also { args.add(current.primarySortTime.toEpochMilli()) }
-                append("OR primary_sort_time = ? AND pub_date $compare ?\n").also {
-                    args.add(current.primarySortTime.toEpochMilli())
-                    args.add(pubDate)
-                }
-                append("OR primary_sort_time = ? AND pub_date IS ? AND feed_items.id $compare ?\n").also {
-                    args.add(current.primarySortTime.toEpochMilli())
+                append("OR pub_date $compare ?\n").also { args.add(pubDate) }
+                append("OR pub_date IS ? AND feed_items.id $compare ?\n").also {
                     args.add(pubDate)
                     args.add(itemId)
                 }
@@ -401,8 +400,13 @@ class FeedItemStore(
             }
         return withContext(Dispatchers.IO) {
             appDatabase.openHelper.readableDatabase
-                .query(SimpleSQLiteQuery(queryString.toString(), args.toTypedArray()))
-                .use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else null }
+                // "+block_time" stops SQLite using the block_time index, which matches nearly every row
+                .query(
+                    SimpleSQLiteQuery(
+                        queryString.toString().replace("block_time is null", "+block_time is null"),
+                        args.toTypedArray(),
+                    ),
+                ).use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else null }
         }
     }
 }

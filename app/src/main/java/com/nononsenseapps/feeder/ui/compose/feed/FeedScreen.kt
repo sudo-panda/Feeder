@@ -1014,7 +1014,10 @@ fun FeedScreen(
         }
     }
     // Fork: like Boost, the button hides while scrolling down and comes back when scrolling up
-    var fabHiddenByScroll by remember(viewState.currentFeedOrTag) { mutableStateOf(false) }
+    // One state for the screen's lifetime (the scroll connection below keeps a reference to it),
+    // shown again whenever another feed or tag opens
+    var fabHiddenByScroll by remember { mutableStateOf(false) }
+    LaunchedEffect(viewState.currentFeedOrTag) { fabHiddenByScroll = false }
     val fabScrollConnection =
         remember {
             object : NestedScrollConnection {

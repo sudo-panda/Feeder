@@ -47,4 +47,25 @@
   <string name="fork_add_feed_hint_title">Follow a website</string>
   <string name="fork_add_feed_hint_body">Type a site like example.com and Feeder looks for its feeds as you type, or paste a link to an RSS, Atom or JSON feed.</string>
   <string name="fork_add_feed_found">Feeds found</string>
+  <!-- Same order as AccentColor.PRESETS -->
+  <string-array name="fork_accent_names">
+    <item>Red</item>
+    <item>Pink</item>
+    <item>Purple</item>
+    <item>Deep purple</item>
+    <item>Indigo</item>
+    <item>Blue</item>
+    <item>Light blue</item>
+    <item>Cyan</item>
+    <item>Teal</item>
+    <item>Green</item>
+    <item>Light green</item>
+    <item>Lime</item>
+    <item>Amber</item>
+    <item>Orange</item>
+    <item>Deep orange</item>
+    <item>Brown</item>
+    <item>Blue grey</item>
+  </string-array>
+  <string name="fork_text_size">Text size</string>
 </resources>

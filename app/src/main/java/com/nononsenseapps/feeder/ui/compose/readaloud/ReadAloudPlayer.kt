@@ -22,8 +22,6 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -44,9 +42,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nononsenseapps.feeder.R
 import com.nononsenseapps.feeder.model.LocaleOverride
 import com.nononsenseapps.feeder.model.ReadAloudProgress
+import com.nononsenseapps.feeder.ui.compose.components.ForkActionButton
 import com.nononsenseapps.feeder.ui.compose.components.PaddedBottomAppBar
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
-import com.nononsenseapps.feeder.ui.compose.feed.PlainTooltipBox
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.utils.ImmutableHolder
 import kotlinx.coroutines.flow.StateFlow
@@ -158,83 +156,30 @@ fun TTSPlayer(
         PaddedBottomAppBar(
             floatingActionButton = floatingActionButton,
             actions = {
-                PlainTooltipBox(tooltip = { Text(stringResource(R.string.stop_reading)) }) {
-                    IconButton(
-                        onClick = onStop,
-                    ) {
-                        Icon(
-                            Icons.Default.Stop,
-                            contentDescription = stringResource(R.string.stop_reading),
-                        )
-                    }
-                }
+                // Fork: the same grey 22dp buttons as the reader's action bar
+                ForkActionButton(Icons.Default.Stop, stringResource(R.string.stop_reading), onClick = onStop)
                 Crossfade(targetState = currentlyPlaying) { playing ->
                     if (playing) {
-                        PlainTooltipBox(tooltip = { Text(stringResource(R.string.pause_reading)) }) {
-                            IconButton(
-                                onClick = onPause,
-                            ) {
-                                Icon(
-                                    Icons.Default.Pause,
-                                    contentDescription = stringResource(R.string.pause_reading),
-                                )
-                            }
-                        }
+                        ForkActionButton(Icons.Default.Pause, stringResource(R.string.pause_reading), onClick = onPause)
                     } else {
-                        PlainTooltipBox(tooltip = { Text(stringResource(R.string.resume_reading)) }) {
-                            IconButton(
-                                onClick = onPlay,
-                            ) {
-                                Icon(
-                                    // TextToSpeech
-                                    Icons.Default.PlayArrow,
-                                    contentDescription = stringResource(R.string.resume_reading),
-                                )
-                            }
-                        }
+                        ForkActionButton(Icons.Default.PlayArrow, stringResource(R.string.resume_reading), onClick = onPlay)
                     }
                 }
-                PlainTooltipBox(tooltip = { Text(stringResource(R.string.skip_to_next)) }) {
-                    IconButton(
-                        onClick = onSkipNext,
-                    ) {
-                        Icon(
-                            Icons.Default.SkipNext,
-                            contentDescription = stringResource(R.string.skip_to_next),
-                        )
-                    }
-                }
+                ForkActionButton(Icons.Default.SkipNext, stringResource(R.string.skip_to_next), onClick = onSkipNext)
                 // Fork: speed, language and voice in one settings panel instead of a language menu
-                PlainTooltipBox(tooltip = { Text(stringResource(R.string.read_aloud_settings)) }) {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(
-                            Icons.Outlined.Tune,
-                            contentDescription = stringResource(R.string.read_aloud_settings),
-                        )
-                    }
-                }
+                ForkActionButton(Icons.Outlined.Tune, stringResource(R.string.read_aloud_settings), onClick = { showMenu = true })
                 if (showMenu) {
                     ReadAloudSettingsSheet(onDismiss = { showMenu = false })
                 }
-                PlainTooltipBox(tooltip = { Text(stringResource(R.string.go_to_spoken_text)) }) {
-                    val followingHere = progress.followSpokenText && progress.articleId != null && progress.articleId == displayedArticleId
-                    IconButton(
-                        onClick = onGoToSpokenText,
-                        enabled = progress.articleId != null,
-                        colors =
-                            if (followingHere) {
-                                IconButtonDefaults.iconButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                            } else {
-                                IconButtonDefaults.iconButtonColors()
-                            },
-                        modifier = Modifier.safeSemantics { selected = followingHere },
-                    ) {
-                        Icon(Icons.Default.MyLocation, contentDescription = stringResource(R.string.go_to_spoken_text))
-                    }
-                }
+                val followingHere = progress.followSpokenText && progress.articleId != null && progress.articleId == displayedArticleId
+                ForkActionButton(
+                    Icons.Default.MyLocation,
+                    stringResource(R.string.go_to_spoken_text),
+                    onClick = onGoToSpokenText,
+                    highlighted = followingHere,
+                    enabled = progress.articleId != null,
+                    modifier = Modifier.safeSemantics { selected = followingHere },
+                )
             },
         )
     }

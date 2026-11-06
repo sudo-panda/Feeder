@@ -37,6 +37,7 @@ import com.nononsenseapps.feeder.model.html.LinearImage
 import com.nononsenseapps.feeder.model.html.LinearListItem
 import com.nononsenseapps.feeder.model.html.LinearTable
 import com.nononsenseapps.feeder.model.html.LinearText
+import java.util.IdentityHashMap
 
 // Fork: Boost-style "find in article" for the reader
 
@@ -76,14 +77,20 @@ private fun textsIn(element: LinearElement): List<LinearText> =
         else -> emptyList()
     }
 
-/** Highlights per text: each match's range, and whether it is the current one. */
+/**
+ * Highlights per text: each match's range, and whether it is the current one. Keyed by the text
+ * object itself, so two paragraphs with the same words keep their own highlights.
+ */
 fun findHighlights(
     matches: List<FindMatch>,
     current: Int,
-): Map<LinearText, List<Pair<IntRange, Boolean>>> =
-    matches
-        .mapIndexed { index, match -> match.text to (match.range to (index == current)) }
-        .groupBy({ it.first }, { it.second })
+): Map<LinearText, List<Pair<IntRange, Boolean>>> {
+    val result = IdentityHashMap<LinearText, MutableList<Pair<IntRange, Boolean>>>()
+    matches.forEachIndexed { index, match ->
+        result.getOrPut(match.text) { mutableListOf() } += match.range to (index == current)
+    }
+    return result
+}
 
 internal val LocalFindHighlights = compositionLocalOf<Map<LinearText, List<Pair<IntRange, Boolean>>>> { emptyMap() }
 
