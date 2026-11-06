@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Terrain
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -148,16 +151,22 @@ fun FeedItemCompactCard(
             Row(
                 modifier =
                     Modifier
-                        .height(iconSize)
-                        .padding(top = 8.dp, end = 8.dp, start = 8.dp)
+                        // Fork: the same 8dp from the top and the side
+                        .padding(8.dp)
                         .align(Alignment.TopEnd),
             ) {
                 if (state.item.bookmarked && state.bookmarkIndicator) {
                     FeedItemSavedIndicator(size = iconSize, modifier = Modifier)
                 }
-                // Fork: the unread circle takes the corner; the feed icon is next to its name
-                if (state.item.unread) {
-                    FeedItemNewIndicator(size = iconSize, modifier = Modifier)
+                // Fork: a white ticked circle in the corner marks read articles (grey when there is
+                // no image to show it on); the feed icon is next to its name
+                if (!state.item.unread) {
+                    Icon(
+                        Icons.Outlined.CheckCircle,
+                        contentDescription = stringResource(id = R.string.read_adjective),
+                        tint = if (state.showThumbnail) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(iconSize),
+                    )
                 }
             }
 
