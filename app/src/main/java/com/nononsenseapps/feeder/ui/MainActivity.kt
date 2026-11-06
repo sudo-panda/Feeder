@@ -11,6 +11,8 @@ import android.view.KeyEvent
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -162,7 +164,14 @@ class MainActivity : DIAwareComponentActivity() {
         val navController = rememberNavController()
         val navDrawerListState = rememberLazyListState()
 
-        NavHost(navController, startDestination = FeedDestination.route) {
+        NavHost(
+            navController,
+            startDestination = FeedDestination.route,
+            // Fork: the back gesture fades like every other page change, instead of the library's
+            // default of shrinking the page while swiping
+            predictivePopEnterTransition = { fadeIn() },
+            predictivePopExitTransition = { fadeOut() },
+        ) {
             FeedDestination.register(this, navController, navDrawerListState, mainActivityViewModel)
             ArticleDestination.register(this, navController, navDrawerListState, mainActivityViewModel)
             // Feed editing
