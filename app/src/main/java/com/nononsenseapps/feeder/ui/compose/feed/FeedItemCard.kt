@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Drafts
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.MarkEmailUnread
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StarBorder
@@ -283,13 +284,6 @@ private fun FeedItemCardActions(
             tint = if (item.bookmarked) MaterialTheme.colorScheme.primary else tint,
             onClick = onToggleBookmark,
         )
-        // Same look and logic as the reader's read/unread button, instead of swiping the card
-        CardActionButton(
-            icon = if (item.unread) Icons.Filled.MarkEmailUnread else Icons.Outlined.Drafts,
-            contentDescription = stringResource(if (item.unread) R.string.mark_as_read else R.string.mark_as_unread),
-            tint = if (item.unread) MaterialTheme.colorScheme.primary else tint,
-            onClick = onToggleRead,
-        )
         CardActionButton(
             icon = Icons.Outlined.Share,
             contentDescription = stringResource(R.string.share),
@@ -319,6 +313,7 @@ private fun FeedItemCardActions(
                 onToggleBookmark = onToggleBookmark,
                 // Save and share are buttons on the card already
                 cardButtonsShown = true,
+                onToggleRead = onToggleRead,
             )
         }
     }
@@ -498,6 +493,7 @@ fun FeedItemDropdownMenu(
     onShareItem: () -> Unit,
     onToggleBookmark: () -> Unit,
     cardButtonsShown: Boolean = false,
+    onToggleRead: (() -> Unit)? = null,
 ) {
     val closeMenuText = stringResource(id = R.string.close_menu)
     DropdownMenu(
@@ -505,6 +501,24 @@ fun FeedItemDropdownMenu(
         onDismissRequest = onDismissDropdown,
         modifier = Modifier.onKeyEventLikeEscape(onDismissDropdown),
     ) {
+        // Fork: on cards, read/unread lives here instead of a button or a swipe
+        if (onToggleRead != null) {
+            DropdownMenuItem(
+                onClick = {
+                    onDismissDropdown()
+                    onToggleRead()
+                },
+                leadingIcon = {
+                    Icon(
+                        if (item.unread) Icons.Outlined.Drafts else Icons.Outlined.MarkEmailUnread,
+                        contentDescription = null,
+                    )
+                },
+                text = {
+                    Text(stringResource(if (item.unread) R.string.mark_as_read else R.string.mark_as_unread))
+                },
+            )
+        }
         DropdownMenuItem(
             onClick = {
                 onDismissDropdown()

@@ -77,7 +77,9 @@ data class FeedItemState(
 )
 
 private val iconSize = 24.dp
-private val gradientColors = listOf(Color.Black.copy(alpha = 0.8f), Color.Black.copy(alpha = 0.38f), Color.Black.copy(alpha = 0.8f))
+
+// Fork: the image stays clear in the upper half and only darkens behind the text at the bottom
+private val gradientColors = listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.8f))
 
 @Composable
 fun FeedItemCompactCard(
@@ -225,8 +227,7 @@ private fun FeedItemThumbnail(
                 Modifier
                     .clip(MaterialTheme.shapes.medium)
                     .fillMaxWidth()
-                    .aspectRatio(16.0f / 9.0f)
-                    .alpha(0.74f),
+                    .aspectRatio(16.0f / 9.0f),
         )
     }
 }
