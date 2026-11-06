@@ -39,6 +39,9 @@
 > - **Add feed page:** a rounded search field that searches by itself once you stop typing an
 >   address, a short how-to, and result cards with feed avatars. The sidebar stays open behind
 >   the Add and Edit pages.
+> - **Card buttons:** save, read/unread, share and a ⋯ menu (no repeats of the buttons). Swiping a
+>   card opens the article in the browser; other article styles still swipe to mark read.
+> - **View type** in the feed screen's ⋮ menu: card, compact card, compact or super compact.
 > - **List appearance:** title size, text size and icon size of the article list, from the feed screen's
 >   ⋮ menu.
 > - **Hiding mark-all-as-read button:** it slides away while you scroll down and comes back

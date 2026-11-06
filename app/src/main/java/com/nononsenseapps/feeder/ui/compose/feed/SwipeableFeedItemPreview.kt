@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MarkEmailRead
 import androidx.compose.material.icons.outlined.MarkEmailUnread
+import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -95,10 +96,14 @@ fun SwipeableFeedItemPreview(
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     val anchoredDraggableState = remember { AnchoredDraggableState(FeedItemSwipeState.CENTER) }
     val onSwipeCallback by rememberUpdatedState(newValue = onSwipe)
+    // Fork: cards have a read/unread button, so swiping a card opens the article in the browser
+    val swipeOpensBrowser = feedItemStyle == FeedItemStyle.CARD
+    val onOpenInBrowserCallback by rememberUpdatedState(newValue = onOpenFeedItemInBrowser)
 
     val color by animateColorAsState(
         targetValue =
             when {
+                swipeOpensBrowser -> MaterialTheme.colorScheme.surfaceContainerHighest
                 item.unread || filter.onlyUnread -> SwipingItemToReadColor
                 else -> SwipingItemToUnreadColor
             },
@@ -114,7 +119,11 @@ fun SwipeableFeedItemPreview(
 
     var skipHapticFeedback by remember { mutableStateOf(false) }
     LaunchedEffect(anchoredDraggableState.settledValue) {
-        if (anchoredDraggableState.settledValue != FeedItemSwipeState.CENTER) {
+        if (anchoredDraggableState.settledValue != FeedItemSwipeState.CENTER && swipeOpensBrowser) {
+            skipHapticFeedback = true
+            anchoredDraggableState.animateTo(FeedItemSwipeState.CENTER)
+            onOpenInBrowserCallback()
+        } else if (anchoredDraggableState.settledValue != FeedItemSwipeState.CENTER) {
             logDebug(LOG_TAG, "onSwipe ${item.unread}")
             if (!filter.onlyUnread) {
                 skipHapticFeedback = true
@@ -264,10 +273,11 @@ fun SwipeableFeedItemPreview(
                     }.padding(horizontal = 24.dp),
         ) {
             Icon(
-                // Fork: same envelope icons as the reader's read/unread button
-                when (item.unread) {
-                    true -> Icons.Outlined.MarkEmailRead
-                    false -> Icons.Outlined.MarkEmailUnread
+                // Fork: same icons as the buttons doing the same thing
+                when {
+                    swipeOpensBrowser -> Icons.Outlined.OpenInBrowser
+                    item.unread -> Icons.Outlined.MarkEmailRead
+                    else -> Icons.Outlined.MarkEmailUnread
                 },
                 contentDescription = null,
             )
@@ -294,6 +304,7 @@ fun SwipeableFeedItemPreview(
                     showOnlyTitle = showOnlyTitle,
                     showReadingTime = showReadingTime,
                     onShowDropdown = { dropDownMenuExpanded = true },
+                    onToggleRead = { onSwipe(item.unread) },
                     modifier =
                         Modifier.offset {
                             try {

@@ -20,8 +20,10 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Article
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MarkEmailUnread
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Drafts
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Share
@@ -107,6 +109,7 @@ fun FeedItemCard(
     showReadingTime: Boolean,
     modifier: Modifier = Modifier,
     onShowDropdown: () -> Unit = {},
+    onToggleRead: () -> Unit = {},
 ) {
     // Fork: Boost-style card: bold title, one meta line, snippet, full-bleed image, quick actions
     ElevatedCard(
@@ -210,6 +213,7 @@ fun FeedItemCard(
                 onOpenFeedItemInCustomTab = onOpenFeedItemInCustomTab,
                 onMarkAboveAsRead = onMarkAboveAsRead,
                 onMarkBelowAsRead = onMarkBelowAsRead,
+                onToggleRead = onToggleRead,
             )
         }
     }
@@ -264,6 +268,7 @@ private fun FeedItemCardActions(
     onOpenFeedItemInCustomTab: () -> Unit,
     onMarkAboveAsRead: () -> Unit,
     onMarkBelowAsRead: () -> Unit,
+    onToggleRead: () -> Unit,
 ) {
     val tint = MaterialTheme.colorScheme.onSurfaceVariant
     Row(
@@ -278,23 +283,25 @@ private fun FeedItemCardActions(
             tint = if (item.bookmarked) MaterialTheme.colorScheme.primary else tint,
             onClick = onToggleBookmark,
         )
+        // Same look and logic as the reader's read/unread button, instead of swiping the card
+        CardActionButton(
+            icon = if (item.unread) Icons.Filled.MarkEmailUnread else Icons.Outlined.Drafts,
+            contentDescription = stringResource(if (item.unread) R.string.mark_as_read else R.string.mark_as_unread),
+            tint = if (item.unread) MaterialTheme.colorScheme.primary else tint,
+            onClick = onToggleRead,
+        )
         CardActionButton(
             icon = Icons.Outlined.Share,
             contentDescription = stringResource(R.string.share),
             tint = tint,
             onClick = onShareItem,
         )
-        CardActionButton(
-            icon = Icons.Outlined.OpenInBrowser,
-            contentDescription = stringResource(R.string.open_article_in_default_browser),
-            tint = tint,
-            onClick = onOpenFeedItemInBrowser,
-        )
         Spacer(modifier = Modifier.weight(1f))
         // The menu is anchored to this button, also when opened by a long press on the card
         Box {
+            // Horizontal dots, so it doesn't look like the screen's ⋮ menu in the top bar
             CardActionButton(
-                icon = Icons.Default.MoreVert,
+                icon = Icons.Default.MoreHoriz,
                 contentDescription = stringResource(R.string.open_menu),
                 tint = tint,
                 onClick = onShowDropdown,
@@ -310,6 +317,8 @@ private fun FeedItemCardActions(
                 onMarkBelowAsRead = onMarkBelowAsRead,
                 onShareItem = onShareItem,
                 onToggleBookmark = onToggleBookmark,
+                // Save and share are buttons on the card already
+                cardButtonsShown = true,
             )
         }
     }
@@ -488,6 +497,7 @@ fun FeedItemDropdownMenu(
     onMarkBelowAsRead: () -> Unit,
     onShareItem: () -> Unit,
     onToggleBookmark: () -> Unit,
+    cardButtonsShown: Boolean = false,
 ) {
     val closeMenuText = stringResource(id = R.string.close_menu)
     DropdownMenu(
@@ -531,29 +541,31 @@ fun FeedItemDropdownMenu(
                 )
             },
         )
-        DropdownMenuItem(
-            onClick = {
-                onDismissDropdown()
-                onToggleBookmark()
-            },
-            leadingIcon = {
-                Icon(
-                    if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                    contentDescription = null,
-                )
-            },
-            text = {
-                Text(
-                    text =
-                        stringResource(
-                            when (item.bookmarked) {
-                                true -> R.string.unsave_article
-                                false -> R.string.save_article
-                            },
-                        ),
-                )
-            },
-        )
+        if (!cardButtonsShown) {
+            DropdownMenuItem(
+                onClick = {
+                    onDismissDropdown()
+                    onToggleBookmark()
+                },
+                leadingIcon = {
+                    Icon(
+                        if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = null,
+                    )
+                },
+                text = {
+                    Text(
+                        text =
+                            stringResource(
+                                when (item.bookmarked) {
+                                    true -> R.string.unsave_article
+                                    false -> R.string.save_article
+                                },
+                            ),
+                    )
+                },
+            )
+        }
         DropdownMenuItem(
             onClick = {
                 onDismissDropdown()
@@ -578,18 +590,20 @@ fun FeedItemDropdownMenu(
                 )
             },
         )
-        DropdownMenuItem(
-            onClick = {
-                onDismissDropdown()
-                onShareItem()
-            },
-            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-            text = {
-                Text(
-                    text = stringResource(R.string.share),
-                )
-            },
-        )
+        if (!cardButtonsShown) {
+            DropdownMenuItem(
+                onClick = {
+                    onDismissDropdown()
+                    onShareItem()
+                },
+                leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                text = {
+                    Text(
+                        text = stringResource(R.string.share),
+                    )
+                },
+            )
+        }
         // Hidden button for TalkBack
         DropdownMenuItem(
             onClick = onDismissDropdown,

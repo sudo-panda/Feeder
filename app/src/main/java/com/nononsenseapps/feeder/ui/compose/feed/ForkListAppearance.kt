@@ -2,23 +2,36 @@ package com.nononsenseapps.feeder.ui.compose.feed
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.ViewAgenda
+import androidx.compose.material.icons.outlined.ViewDay
+import androidx.compose.material.icons.outlined.ViewHeadline
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nononsenseapps.feeder.R
+import com.nononsenseapps.feeder.archmodel.FeedItemStyle
 import com.nononsenseapps.feeder.archmodel.Repository
 import com.nononsenseapps.feeder.ui.compose.feedarticle.SliderRow
 import com.nononsenseapps.feeder.ui.compose.theme.LocalListAppearance
@@ -103,3 +116,74 @@ fun ListAppearanceSheet(onDismiss: () -> Unit) {
         }
     }
 }
+
+// Fork: the article style (card, compact, ...) from the feed screen's ⋮ menu
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ViewTypeSheet(onDismiss: () -> Unit) {
+    val repository: Repository by LocalDI.current.instance()
+    val current by repository.feedItemStyle.collectAsStateWithLifecycle()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+    ) {
+        ViewTypeOptions(
+            current = current,
+            onSelect = {
+                repository.setFeedItemStyle(it)
+                onDismiss()
+            },
+        )
+    }
+}
+
+@Composable
+fun ViewTypeOptions(
+    current: FeedItemStyle,
+    onSelect: (FeedItemStyle) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.padding(bottom = 24.dp)) {
+        Text(
+            stringResource(R.string.fork_view_type),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp),
+        )
+        FeedItemStyle.entries.forEach { style ->
+            val selected = style == current
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .selectable(
+                            selected = selected,
+                            role = Role.RadioButton,
+                            onClick = { onSelect(style) },
+                        ).padding(horizontal = 24.dp, vertical = 12.dp),
+            ) {
+                Icon(
+                    style.icon(),
+                    contentDescription = null,
+                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    stringResource(style.stringId),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                RadioButton(selected = selected, onClick = null)
+            }
+        }
+    }
+}
+
+fun FeedItemStyle.icon(): ImageVector =
+    when (this) {
+        FeedItemStyle.CARD -> Icons.Outlined.ViewAgenda
+        FeedItemStyle.COMPACT_CARD -> Icons.Outlined.ViewDay
+        FeedItemStyle.COMPACT -> Icons.AutoMirrored.Outlined.ViewList
+        FeedItemStyle.SUPER_COMPACT -> Icons.Outlined.ViewHeadline
+    }

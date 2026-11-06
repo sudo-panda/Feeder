@@ -68,4 +68,5 @@
     <item>Blue grey</item>
   </string-array>
   <string name="fork_text_size">Text size</string>
+  <string name="fork_view_type">View type</string>
 </resources>
