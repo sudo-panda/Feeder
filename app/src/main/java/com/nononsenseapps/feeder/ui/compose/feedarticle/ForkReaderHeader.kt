@@ -94,35 +94,38 @@ fun ForkReaderHeader(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = modifier,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier =
-                Modifier
-                    .clickable(onClick = onFeedTitleClick)
-                    .semantics(mergeDescendants = true) {
-                        role = Role.Button
-                        contentDescription = goToFeedLabel
-                    },
-        ) {
-            FeedAvatar(feedTitle = feedTitle, imageUrl = feedImageUrl, size = 36.dp)
-            Column {
-                WithBidiDeterminedLayoutDirection(paragraph = feedTitle) {
-                    Text(
-                        text = feedTitle,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (meta.isNotEmpty()) {
-                    Text(
-                        text = meta,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        // Nothing until the article has loaded, instead of an empty coloured circle
+        if (feedTitle.isNotBlank()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier =
+                    Modifier
+                        .clickable(onClick = onFeedTitleClick)
+                        .semantics(mergeDescendants = true) {
+                            role = Role.Button
+                            contentDescription = goToFeedLabel
+                        },
+            ) {
+                FeedAvatar(feedTitle = feedTitle, imageUrl = feedImageUrl, size = 36.dp)
+                Column {
+                    WithBidiDeterminedLayoutDirection(paragraph = feedTitle) {
+                        Text(
+                            text = feedTitle,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    if (meta.isNotEmpty()) {
+                        Text(
+                            text = meta,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

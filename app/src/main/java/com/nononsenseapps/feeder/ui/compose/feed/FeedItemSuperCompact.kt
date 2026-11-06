@@ -3,7 +3,6 @@ package com.nononsenseapps.feeder.ui.compose.feed
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,7 +12,6 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.model.MediaImage
-import com.nononsenseapps.feeder.ui.compose.minimumTouchSize
 import com.nononsenseapps.feeder.ui.compose.theme.LocalDimens
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import java.net.URL
@@ -40,20 +38,23 @@ fun FeedItemSuperCompact(
     Surface(
         modifier =
             modifier
-                .requiredHeightIn(min = minimumTouchSize)
                 .alpha(if (!item.unread) 0.75f else 1.0f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(vertical = 8.dp, horizontal = LocalDimens.current.margin),
+            // Fork: shorter rows, with just the title and the feed and time line
+            modifier = Modifier.padding(vertical = 6.dp, horizontal = LocalDimens.current.margin),
         ) {
-            FeedItemEitherIndicator(
-                bookmarked = item.bookmarked && bookmarkIndicator,
-                itemImage = null,
-                feedImageUrl = item.feedImageUrl?.toString(),
-                size = 24.dp,
-            )
+            // Fork: only the saved star in front; the feed's round icon is next to its name
+            if (item.bookmarked && bookmarkIndicator) {
+                FeedItemEitherIndicator(
+                    bookmarked = true,
+                    itemImage = null,
+                    feedImageUrl = null,
+                    size = 24.dp,
+                )
+            }
             FeedItemText(
                 item = item,
                 onOpenFeedItemInReader = onOpenFeedItemInReader,
@@ -65,9 +66,10 @@ fun FeedItemSuperCompact(
                 onToggleBookmark = onToggleBookmark,
                 dropDownMenuExpanded = dropDownMenuExpanded,
                 onDismissDropdown = onDismissDropdown,
-                maxLines = maxLines,
-                showOnlyTitle = showOnlyTitle,
+                maxLines = 1,
+                showOnlyTitle = true,
                 showReadingTime = showReadingTime,
+                showFeedAvatar = true,
             )
         }
     }

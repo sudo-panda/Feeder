@@ -20,9 +20,12 @@ import androidx.compose.material.ContentAlpha
 import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Article
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MarkEmailUnread
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Drafts
 import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.MarkEmailUnread
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.StarBorder
@@ -70,6 +73,7 @@ import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
 import com.nononsenseapps.feeder.ui.compose.components.FeedAvatar
 import com.nononsenseapps.feeder.ui.compose.components.ForkActionButton
 import com.nononsenseapps.feeder.ui.compose.components.safeSemantics
+import com.nononsenseapps.feeder.ui.compose.components.textIconSize
 import com.nononsenseapps.feeder.ui.compose.feedarticle.wordsToReadTimeSecs
 import com.nononsenseapps.feeder.ui.compose.minimumTouchSize
 import com.nononsenseapps.feeder.ui.compose.text.WithBidiDeterminedLayoutDirection
@@ -77,6 +81,7 @@ import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemDateStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemFeedTitleStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemSnippetTextStyle
 import com.nononsenseapps.feeder.ui.compose.theme.FeedListItemTitleTextStyle
+import com.nononsenseapps.feeder.ui.compose.theme.LocalListAppearance
 import com.nononsenseapps.feeder.ui.compose.theme.LocalListIconScale
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.theme.titleFontWeight
@@ -105,6 +110,7 @@ fun FeedItemCard(
     showReadingTime: Boolean,
     modifier: Modifier = Modifier,
     onShowDropdown: () -> Unit = {},
+    onToggleRead: () -> Unit = {},
 ) {
     // Fork: Boost-style card: bold title, one meta line, snippet, full-bleed image, quick actions
     ElevatedCard(
@@ -128,7 +134,8 @@ fun FeedItemCard(
                             fontWeight = if (item.unread) FontWeight.Bold else FontWeight.Normal,
                             // Like Boost, only the title shows that an article was read
                             color = if (item.unread) Color.Unspecified else MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = maxLines,
+                            // One more line for big titles, so they don't lose most of their words
+                            maxLines = if (LocalListAppearance.current.titleScale > 1.2f) maxLines + 1 else maxLines,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -207,6 +214,7 @@ fun FeedItemCard(
                 onOpenFeedItemInCustomTab = onOpenFeedItemInCustomTab,
                 onMarkAboveAsRead = onMarkAboveAsRead,
                 onMarkBelowAsRead = onMarkBelowAsRead,
+                onToggleRead = onToggleRead,
             )
         }
     }
@@ -231,7 +239,7 @@ private fun FeedItemCardMetaLine(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        FeedAvatar(feedTitle = item.feedTitle, imageUrl = item.feedImageUrl?.toString(), size = 16.dp * LocalListIconScale.current)
+        FeedAvatar(feedTitle = item.feedTitle, imageUrl = item.feedImageUrl?.toString(), size = textIconSize(MaterialTheme.typography.labelMedium, 16f / 12f))
         WithBidiDeterminedLayoutDirection(paragraph = meta) {
             Text(
                 text = meta,
@@ -261,6 +269,7 @@ private fun FeedItemCardActions(
     onOpenFeedItemInCustomTab: () -> Unit,
     onMarkAboveAsRead: () -> Unit,
     onMarkBelowAsRead: () -> Unit,
+    onToggleRead: () -> Unit,
 ) {
     val tint = MaterialTheme.colorScheme.onSurfaceVariant
     Row(
@@ -281,17 +290,12 @@ private fun FeedItemCardActions(
             tint = tint,
             onClick = onShareItem,
         )
-        CardActionButton(
-            icon = Icons.Outlined.OpenInBrowser,
-            contentDescription = stringResource(R.string.open_article_in_default_browser),
-            tint = tint,
-            onClick = onOpenFeedItemInBrowser,
-        )
         Spacer(modifier = Modifier.weight(1f))
         // The menu is anchored to this button, also when opened by a long press on the card
         Box {
+            // Horizontal dots, so it doesn't look like the screen's ⋮ menu in the top bar
             CardActionButton(
-                icon = Icons.Default.MoreVert,
+                icon = Icons.Default.MoreHoriz,
                 contentDescription = stringResource(R.string.open_menu),
                 tint = tint,
                 onClick = onShowDropdown,
@@ -307,6 +311,9 @@ private fun FeedItemCardActions(
                 onMarkBelowAsRead = onMarkBelowAsRead,
                 onShareItem = onShareItem,
                 onToggleBookmark = onToggleBookmark,
+                // Save and share are buttons on the card already
+                cardButtonsShown = true,
+                onToggleRead = onToggleRead,
             )
         }
     }
@@ -344,6 +351,7 @@ fun RowScope.FeedItemText(
     showOnlyTitle: Boolean,
     showReadingTime: Boolean,
     modifier: Modifier = Modifier,
+    showFeedAvatar: Boolean = false,
 ) {
     val snippetStyle = FeedListItemSnippetTextStyle()
     val joinedText =
@@ -385,10 +393,20 @@ fun RowScope.FeedItemText(
         Box {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
                         .fillMaxWidth(),
             ) {
+                // Fork: the feed's round icon before its name, like on the cards
+                if (showFeedAvatar) {
+                    FeedAvatar(
+                        feedTitle = item.feedTitle,
+                        imageUrl = item.feedImageUrl?.toString(),
+                        size = textIconSize(FeedListItemFeedTitleStyle(), 16f / 12f),
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                }
                 CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
                     WithBidiDeterminedLayoutDirection(paragraph = item.feedTitle) {
                         Text(
@@ -485,6 +503,8 @@ fun FeedItemDropdownMenu(
     onMarkBelowAsRead: () -> Unit,
     onShareItem: () -> Unit,
     onToggleBookmark: () -> Unit,
+    cardButtonsShown: Boolean = false,
+    onToggleRead: (() -> Unit)? = null,
 ) {
     val closeMenuText = stringResource(id = R.string.close_menu)
     DropdownMenu(
@@ -492,6 +512,24 @@ fun FeedItemDropdownMenu(
         onDismissRequest = onDismissDropdown,
         modifier = Modifier.onKeyEventLikeEscape(onDismissDropdown),
     ) {
+        // Fork: on cards, read/unread lives here instead of a button or a swipe
+        if (onToggleRead != null) {
+            DropdownMenuItem(
+                onClick = {
+                    onDismissDropdown()
+                    onToggleRead()
+                },
+                leadingIcon = {
+                    Icon(
+                        if (item.unread) Icons.Outlined.Drafts else Icons.Outlined.MarkEmailUnread,
+                        contentDescription = null,
+                    )
+                },
+                text = {
+                    Text(stringResource(if (item.unread) R.string.mark_as_read else R.string.mark_as_unread))
+                },
+            )
+        }
         DropdownMenuItem(
             onClick = {
                 onDismissDropdown()
@@ -528,29 +566,31 @@ fun FeedItemDropdownMenu(
                 )
             },
         )
-        DropdownMenuItem(
-            onClick = {
-                onDismissDropdown()
-                onToggleBookmark()
-            },
-            leadingIcon = {
-                Icon(
-                    if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                    contentDescription = null,
-                )
-            },
-            text = {
-                Text(
-                    text =
-                        stringResource(
-                            when (item.bookmarked) {
-                                true -> R.string.unsave_article
-                                false -> R.string.save_article
-                            },
-                        ),
-                )
-            },
-        )
+        if (!cardButtonsShown) {
+            DropdownMenuItem(
+                onClick = {
+                    onDismissDropdown()
+                    onToggleBookmark()
+                },
+                leadingIcon = {
+                    Icon(
+                        if (item.bookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = null,
+                    )
+                },
+                text = {
+                    Text(
+                        text =
+                            stringResource(
+                                when (item.bookmarked) {
+                                    true -> R.string.unsave_article
+                                    false -> R.string.save_article
+                                },
+                            ),
+                    )
+                },
+            )
+        }
         DropdownMenuItem(
             onClick = {
                 onDismissDropdown()
@@ -575,18 +615,20 @@ fun FeedItemDropdownMenu(
                 )
             },
         )
-        DropdownMenuItem(
-            onClick = {
-                onDismissDropdown()
-                onShareItem()
-            },
-            leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-            text = {
-                Text(
-                    text = stringResource(R.string.share),
-                )
-            },
-        )
+        if (!cardButtonsShown) {
+            DropdownMenuItem(
+                onClick = {
+                    onDismissDropdown()
+                    onShareItem()
+                },
+                leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                text = {
+                    Text(
+                        text = stringResource(R.string.share),
+                    )
+                },
+            )
+        }
         // Hidden button for TalkBack
         DropdownMenuItem(
             onClick = onDismissDropdown,

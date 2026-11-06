@@ -756,13 +756,12 @@ fun LinearBlockQuoteContent(
     onLinkClick: (url: String, index: Int?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Fork: a grey box (the fork has no tonal elevation tint, so the upstream elevated surface was
+    // invisible at night), lined up with the text like code blocks
     Surface(
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         shape = MaterialTheme.shapes.medium,
-        tonalElevation = 2.dp,
-        modifier =
-            modifier
-                .padding(start = 8.dp),
+        modifier = modifier,
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),

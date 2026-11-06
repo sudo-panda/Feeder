@@ -41,4 +41,14 @@ class ForkFindInArticleTest {
         val first = highlights.getValue(article.elements[0] as LinearText)
         assertEquals(listOf(false, true, false), first.map { it.second })
     }
+
+    @Test
+    fun repeatedParagraphsKeepTheirOwnHighlights() {
+        val ad1 = text("Advertisement")
+        val ad2 = text("Advertisement")
+        val repeated = LinearArticle(listOf(ad1, ad2))
+        val highlights = findHighlights(findMatches(repeated, "advert"), current = 1)
+        assertEquals(listOf(false), highlights[ad1]?.map { it.second })
+        assertEquals(listOf(true), highlights[ad2]?.map { it.second })
+    }
 }

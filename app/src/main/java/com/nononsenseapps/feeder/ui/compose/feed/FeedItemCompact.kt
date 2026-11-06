@@ -10,41 +10,26 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Terrain
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.request.ImageRequest
-import coil3.size.Precision
-import coil3.size.Scale
-import coil3.size.Size
 import com.nononsenseapps.feeder.archmodel.FeedItemStyle
 import com.nononsenseapps.feeder.db.room.FeedItemCursor
 import com.nononsenseapps.feeder.db.room.ID_UNSET
 import com.nononsenseapps.feeder.model.MediaImage
 import com.nononsenseapps.feeder.model.ThumbnailImage
-import com.nononsenseapps.feeder.ui.compose.coil.RestrainedCropScaling
-import com.nononsenseapps.feeder.ui.compose.coil.RestrainedFitScaling
-import com.nononsenseapps.feeder.ui.compose.coil.rememberTintedVectorPainter
 import com.nononsenseapps.feeder.ui.compose.minimumTouchSize
 import com.nononsenseapps.feeder.ui.compose.theme.LocalDimens
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
-import com.nononsenseapps.feeder.util.logDebug
 import java.net.URL
 import java.time.Instant
 import java.time.ZonedDateTime
-import kotlin.math.roundToInt
 
 @Composable
 fun FeedItemCompact(
@@ -90,66 +75,30 @@ fun FeedItemCompact(
                 maxLines = maxLines,
                 showOnlyTitle = showOnlyTitle,
                 showReadingTime = showReadingTime,
+                // Fork: the feed's round icon next to its name, like the cards
+                showFeedAvatar = true,
                 modifier =
                     Modifier
                         .requiredHeightIn(min = minimumTouchSize)
                         .padding(vertical = 8.dp),
             )
 
-            if ((item.bookmarked && bookmarkIndicator) || showThumbnail && (item.image != null || item.feedImageUrl != null)) {
+            // Fork: no thumbnail, it was too small to show anything; only the saved star
+            if (item.bookmarked && bookmarkIndicator) {
                 Box(
                     modifier = Modifier.fillMaxHeight(),
                     contentAlignment = Alignment.TopEnd,
                 ) {
-                    if (item.bookmarked && bookmarkIndicator) {
-                        FeedItemEitherIndicator(
-                            bookmarked = true,
-                            itemImage = null,
-                            feedImageUrl = null,
-                            size = 24.dp,
-                            modifier =
-                                Modifier
-                                    .fillMaxHeight()
-                                    .width(64.dp),
-                        )
-                    } else {
-                        (item.image?.url ?: item.feedImageUrl?.toString())?.let { imageUrl ->
-                            val pixelDensity = LocalDensity.current.density
-                            val scale =
-                                if (item.image != null) {
-                                    RestrainedCropScaling(pixelDensity)
-                                } else {
-                                    RestrainedFitScaling(pixelDensity)
-                                }
-                            val pixels =
-                                with(LocalDensity.current) {
-                                    val px = imageWidth.toPx()
-                                    Size(px.roundToInt(), (px * 1.5).roundToInt())
-                                }
-                            AsyncImage(
-                                model =
-                                    ImageRequest
-                                        .Builder(LocalContext.current)
-                                        .data(imageUrl)
-                                        .listener(
-                                            onError = { a, b ->
-                                                logDebug("FEEDER_COMPACT", "error ${a.data}", b.throwable)
-                                            },
-                                        ).scale(Scale.FILL)
-                                        .size(pixels)
-                                        .precision(Precision.INEXACT)
-                                        .build(),
-                                placeholder = rememberTintedVectorPainter(Icons.Outlined.Terrain),
-                                error = rememberTintedVectorPainter(Icons.Outlined.ErrorOutline),
-                                contentDescription = null,
-                                contentScale = scale,
-                                modifier =
-                                    Modifier
-                                        .width(imageWidth)
-                                        .fillMaxHeight(),
-                            )
-                        }
-                    }
+                    FeedItemEitherIndicator(
+                        bookmarked = true,
+                        itemImage = null,
+                        feedImageUrl = null,
+                        size = 24.dp,
+                        modifier =
+                            Modifier
+                                .fillMaxHeight()
+                                .width(64.dp),
+                    )
                 }
             } else {
                 // Taking Row spacing into account

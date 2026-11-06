@@ -2,7 +2,6 @@ package com.nononsenseapps.feeder.ui.compose.searchfeed
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.os.Parcelable
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,22 +18,14 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -58,9 +49,6 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.testTag
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -372,6 +360,18 @@ fun SearchFeedView(
         }
     }
 
+    // Fork: search by itself once typing pauses on something that looks like an address
+    val searchedAlready by rememberUpdatedState(currentlySearching || results.item.isNotEmpty() || errors.item.isNotEmpty())
+    LaunchedEffect(feedUrl) {
+        if (feedUrl != initialFeedUrl && looksLikeAddress(feedUrl)) {
+            delay(1_000)
+            // Not if Search was pressed meanwhile
+            if (!searchedAlready) {
+                onSearchCallback(sloppyLinkToStrictURLNoThrows(feedUrl))
+            }
+        }
+    }
+
     val scrollState = rememberScrollState()
 
     Box(
@@ -477,32 +477,20 @@ fun ColumnScope.leftContent(
         }
     }
 
-    TextField(
+    // Fork: rounded search field and a filled Search button, see ForkSearchFeed.kt
+    ForkFeedSearchField(
         value = feedUrl,
         onValueChange = onUrlChange,
-        label = {
-            Text(stringResource(id = R.string.add_feed_search_hint))
-        },
         isError = isNotValidUrl,
-        keyboardOptions =
-            KeyboardOptions(
-                capitalization = KeyboardCapitalization.None,
-                autoCorrectEnabled = false,
-                keyboardType = KeyboardType.Uri,
-                imeAction = ImeAction.Search,
-            ),
-        keyboardActions =
-            KeyboardActions(
-                onSearch = {
-                    if (isValidUrl) {
-                        onSearch(
-                            sloppyLinkToStrictURLNoThrows(feedUrl),
-                        )
-                        keyboardController?.hide()
-                    }
-                },
-            ),
-        singleLine = true,
+        canSearch = isValidUrl,
+        onSearch = {
+            if (isValidUrl) {
+                onSearch(
+                    sloppyLinkToStrictURLNoThrows(feedUrl),
+                )
+                keyboardController?.hide()
+            }
+        },
         modifier =
             modifier
                 .width(dimens.maxContentWidth)
@@ -518,24 +506,6 @@ fun ColumnScope.leftContent(
                     testTag = "urlField"
                 },
     )
-
-    OutlinedButton(
-        enabled = isValidUrl,
-        onClick = {
-            if (isValidUrl) {
-                try {
-                    onSearch(sloppyLinkToStrictURLNoThrows(feedUrl))
-                    clearFocus()
-                } catch (e: Exception) {
-                    Log.e(LOG_TAG, "Can't search", e)
-                }
-            }
-        },
-    ) {
-        Text(
-            stringResource(android.R.string.search_go),
-        )
-    }
 }
 
 @Composable
@@ -553,17 +523,18 @@ fun ColumnScope.rightContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier,
     ) {
+        // Fork: a short how-to before anything is typed
+        if (suggestions.item.isEmpty() && results.item.isEmpty() && errors.item.isEmpty() && !currentlySearching) {
+            ForkSearchHint()
+        }
         if (suggestions.item.isNotEmpty()) {
-            Text(
-                text = stringResource(id = R.string.feed_search_suggestions_header),
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.align(Alignment.Start),
-            )
+            ForkSectionLabel(text = stringResource(id = R.string.feed_search_suggestions_header))
             suggestions.item.forEach { suggestion ->
                 SearchResultView(
                     title = suggestion.title,
                     url = suggestion.url,
                     description = suggestion.description,
+                    feedImage = suggestion.feedImage,
                     onClick = {
                         onSuggestionClick(suggestion)
                     },
@@ -607,12 +578,16 @@ fun ColumnScope.rightContent(
                 )
             }
         }
+        if (results.item.isNotEmpty()) {
+            ForkSectionLabel(text = stringResource(id = R.string.fork_add_feed_found))
+        }
         for (result in results.item) {
             SearchResultView(
                 title = result.title,
                 url = result.url,
                 description = result.description,
-                {
+                feedImage = result.feedImage,
+                onClick = {
                     onClick(result)
                 },
             )
@@ -625,17 +600,14 @@ fun ColumnScope.rightContent(
 
 @Composable
 fun SearchingIndicator(modifier: Modifier = Modifier) {
-    Box(
-        contentAlignment = Alignment.Center,
+    // Fork: thin bar instead of a spinner
+    ForkSearchingIndicator(
         modifier =
             modifier
-                .fillMaxWidth()
                 .safeSemantics {
                     testTag = "searchingIndicator"
                 },
-    ) {
-        CircularProgressIndicator()
-    }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -646,9 +618,15 @@ fun SearchResultView(
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    feedImage: String = "",
 ) {
     val dimens = LocalDimens.current
-    Card(
+    // Fork: card with the feed's avatar and an add icon, see ForkSearchFeed.kt
+    ForkSearchResultCard(
+        title = title,
+        url = url,
+        description = description,
+        imageUrl = feedImage,
         onClick = onClick,
         modifier =
             modifier
@@ -656,30 +634,7 @@ fun SearchResultView(
                 .safeSemantics {
                     testTag = "searchResult"
                 },
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier =
-                Modifier
-                    .width(dimens.maxContentWidth)
-                    .padding(8.dp),
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-            )
-            if (description.isNotBlank()) {
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-            Text(
-                url,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
+    )
 }
 
 @Composable
@@ -691,41 +646,19 @@ fun ErrorResultView(
     modifier: Modifier = Modifier,
 ) {
     val dimens = LocalDimens.current
-
-    Card(
+    // Fork: see ForkSearchFeed.kt
+    ForkSearchErrorCard(
+        title = title,
+        description = description,
+        url = url,
+        onAddAnyway = onAddAnyway,
         modifier =
             modifier
                 .width(dimens.maxContentWidth)
                 .safeSemantics {
                     testTag = "errorResult"
                 },
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier =
-                Modifier
-                    .width(dimens.maxContentWidth)
-                    .padding(8.dp),
-        ) {
-            Text(
-                title,
-                style =
-                    MaterialTheme.typography.titleSmall
-                        .copy(color = MaterialTheme.colorScheme.error),
-            )
-            Text(
-                url,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                description,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            OutlinedButton(onClick = onAddAnyway) {
-                Text(stringResource(id = R.string.add_anyway))
-            }
-        }
-    }
+    )
 }
 
 @Preview(
@@ -886,6 +819,13 @@ private fun isValidUrl(url: String): Boolean {
 }
 
 private fun isNotValidUrl(url: String) = !isValidUrl(url)
+
+// Fork: a host with a dot and something after it, like "example.com", before searching on its own
+private fun looksLikeAddress(url: String): Boolean {
+    if (!isValidUrl(url)) return false
+    val host = sloppyLinkToStrictURLNoThrows(url).host.orEmpty()
+    return host.contains('.') && host.substringAfterLast('.').length >= 2
+}
 
 @Immutable
 @Parcelize

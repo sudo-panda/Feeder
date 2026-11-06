@@ -57,7 +57,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -481,6 +480,10 @@ fun FeedScreen(
     if (showListAppearance) {
         ListAppearanceSheet(onDismiss = { showListAppearance = false })
     }
+    var showViewType by rememberSaveable { mutableStateOf(false) }
+    if (showViewType) {
+        ViewTypeSheet(onDismiss = { showViewType = false })
+    }
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(viewState.searchBarVisible) {
@@ -781,7 +784,6 @@ fun FeedScreen(
                                     Text(stringResource(id = R.string.mark_all_as_read))
                                 },
                             )
-                            HorizontalDivider()
                             DropdownMenuItem(
                                 onClick = {
                                     onRefreshAll()
@@ -797,7 +799,6 @@ fun FeedScreen(
                                     Text(stringResource(id = R.string.synchronize_feeds))
                                 },
                             )
-                            HorizontalDivider()
                             DropdownMenuItem(
                                 onClick = {
                                     onShowToolbarMenu(false)
@@ -811,6 +812,21 @@ fun FeedScreen(
                                 },
                                 text = {
                                     Text(stringResource(id = R.string.list_appearance))
+                                },
+                            )
+                            DropdownMenuItem(
+                                onClick = {
+                                    onShowToolbarMenu(false)
+                                    showViewType = true
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        viewState.feedItemStyle.icon(),
+                                        contentDescription = null,
+                                    )
+                                },
+                                text = {
+                                    Text(stringResource(id = R.string.fork_view_type))
                                 },
                             )
                             if (viewState.feedScreenTitle.type == FeedType.TAG && !viewState.currentFeedOrTag.isFeed) {
@@ -830,7 +846,6 @@ fun FeedScreen(
                                     },
                                 )
                             }
-                            HorizontalDivider()
                             DropdownMenuItem(
                                 onClick = {
                                     onShowToolbarMenu(false)
@@ -1014,7 +1029,10 @@ fun FeedScreen(
         }
     }
     // Fork: like Boost, the button hides while scrolling down and comes back when scrolling up
-    var fabHiddenByScroll by remember(viewState.currentFeedOrTag) { mutableStateOf(false) }
+    // One state for the screen's lifetime (the scroll connection below keeps a reference to it),
+    // shown again whenever another feed or tag opens
+    var fabHiddenByScroll by remember { mutableStateOf(false) }
+    LaunchedEffect(viewState.currentFeedOrTag) { fabHiddenByScroll = false }
     val fabScrollConnection =
         remember {
             object : NestedScrollConnection {

@@ -1,6 +1,6 @@
 package com.nononsenseapps.feeder.ui.compose.coil
 
-import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -10,7 +10,8 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 @Composable
 fun rememberTintedVectorPainter(
     image: ImageVector,
-    tintColor: Color = LocalContentColor.current,
+    // Fork: soft grey like the other secondary icons, instead of full black or white
+    tintColor: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
 ) = rememberVectorPainter(
     defaultWidth = image.defaultWidth,
     defaultHeight = image.defaultHeight,

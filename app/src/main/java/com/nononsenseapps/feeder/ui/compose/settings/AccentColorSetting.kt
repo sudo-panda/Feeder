@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.ColorLens
+import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.material.icons.outlined.Wallpaper
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -73,7 +74,7 @@ fun AccentColorSetting(
     ) {
         Box(modifier = Modifier.size(64.dp), contentAlignment = Alignment.Center) {
             Icon(
-                Icons.Outlined.ColorLens,
+                Icons.Outlined.FormatColorFill,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.74f),
             )
@@ -116,7 +117,12 @@ fun AccentColorSetting(
 private fun AccentColor.label(): String =
     when (this) {
         AccentColor.Wallpaper -> stringResource(R.string.accent_wallpaper)
-        is AccentColor.Rgb -> toHex()
+        // A preset's name, or "Custom" with its code
+        is AccentColor.Rgb -> {
+            val index = AccentColor.PRESETS.indexOf(this)
+            val names = stringArrayResource(R.array.fork_accent_names)
+            if (index in names.indices) names[index] else "${stringResource(R.string.accent_custom)} · ${toHex()}"
+        }
     }
 
 @Composable
@@ -184,7 +190,12 @@ private fun AccentTilesDialog(
         },
         title = { Text(stringResource(R.string.accent_color)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                // Centred, not pushed to the left of the dialog
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 tiles.chunked(5).forEach { row ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         row.forEach { tile ->

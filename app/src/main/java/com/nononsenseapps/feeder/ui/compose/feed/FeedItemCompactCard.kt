@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeightIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.Terrain
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -25,6 +28,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -44,7 +49,6 @@ import com.nononsenseapps.feeder.ui.compose.minimumTouchSize
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.utils.PreviewThemes
 import com.nononsenseapps.feeder.util.logDebug
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URL
 import java.time.Instant
 
@@ -77,7 +81,25 @@ data class FeedItemState(
 )
 
 private val iconSize = 24.dp
-private val gradientColors = listOf(Color.Black.copy(alpha = 0.8f), Color.Black.copy(alpha = 0.38f), Color.Black.copy(alpha = 0.8f))
+
+// Fork: the top of the image stays clear; from a third of the way down it darkens, strongly behind
+// the text at the bottom, so white text is readable on any image
+private val gradientStops =
+    arrayOf(
+        0f to Color.Transparent,
+        0.3f to Color.Black.copy(alpha = 0.1f),
+        0.6f to Color.Black.copy(alpha = 0.55f),
+        1f to Color.Black.copy(alpha = 0.9f),
+    )
+
+// Fork: read cards are darker all over, and darkest behind the text
+private val readGradientStops =
+    arrayOf(
+        0f to Color.Black.copy(alpha = 0.25f),
+        0.3f to Color.Black.copy(alpha = 0.4f),
+        0.6f to Color.Black.copy(alpha = 0.75f),
+        1f to Color.Black.copy(alpha = 0.95f),
+    )
 
 @Composable
 fun FeedItemCompactCard(
@@ -93,7 +115,9 @@ fun FeedItemCompactCard(
             modifier =
                 Modifier
                     .requiredHeightIn(min = minimumTouchSize)
-                    .alpha(if (!state.item.unread) 0.75f else 1.0f)
+                    // Fork: with an image, read cards show it greyed out instead of fading the
+                    // white text until it can't be read
+                    .alpha(if (!state.item.unread && !state.showThumbnail) 0.75f else 1.0f)
                     .fillMaxWidth(),
         ) {
             if (state.showThumbnail) {
@@ -104,7 +128,7 @@ fun FeedItemCompactCard(
                     }
                 val gradient =
                     Brush.verticalGradient(
-                        colors = gradientColors,
+                        colorStops = if (state.item.unread) gradientStops else readGradientStops,
                         startY = 0f,
                         endY = sizePx.height.pxOrElse { 0 }.toFloat(),
                     )
@@ -113,6 +137,7 @@ fun FeedItemCompactCard(
                     FeedItemThumbnail(
                         imageUrl = imageUrl,
                         sizePx = sizePx,
+                        read = !state.item.unread,
                     )
                 }
                 Box(
@@ -126,21 +151,21 @@ fun FeedItemCompactCard(
             Row(
                 modifier =
                     Modifier
-                        .height(iconSize)
-                        .padding(top = 8.dp, end = 8.dp, start = 8.dp)
+                        // Fork: the same 8dp from the top and the side
+                        .padding(8.dp)
                         .align(Alignment.TopEnd),
             ) {
                 if (state.item.bookmarked && state.bookmarkIndicator) {
                     FeedItemSavedIndicator(size = iconSize, modifier = Modifier)
                 }
-                if (state.item.unread) {
-                    FeedItemNewIndicator(size = iconSize, modifier = Modifier)
-                }
-                state.item.feedImageUrl?.toHttpUrlOrNull()?.also {
-                    FeedItemFeedIconIndicator(
-                        feedImageUrl = it.toString(),
-                        size = iconSize,
-                        modifier = Modifier,
+                // Fork: a white ticked circle in the corner marks read articles (grey when there is
+                // no image to show it on); the feed icon is next to its name
+                if (!state.item.unread) {
+                    Icon(
+                        Icons.Outlined.CheckCircle,
+                        contentDescription = stringResource(id = R.string.read_adjective),
+                        tint = if (state.showThumbnail) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(iconSize),
                     )
                 }
             }
@@ -192,6 +217,7 @@ private fun FeedItemTitle(
                 maxLines = state.maxLines,
                 showOnlyTitle = true,
                 showReadingTime = state.showReadingTime,
+                showFeedAvatar = true,
             )
         }
     }
@@ -201,6 +227,7 @@ private fun FeedItemTitle(
 private fun FeedItemThumbnail(
     imageUrl: String?,
     sizePx: Size,
+    read: Boolean = false,
 ) {
     if (imageUrl != null) {
         AsyncImage(
@@ -219,14 +246,15 @@ private fun FeedItemThumbnail(
             placeholder = rememberTintedVectorPainter(Icons.Outlined.Terrain),
             error = rememberTintedVectorPainter(Icons.Outlined.ErrorOutline),
             contentDescription = stringResource(id = R.string.article_image),
+            // Fork: read articles get a grey, slightly darker image
+            colorFilter = if (read) ReadImageFilter else null,
             contentScale = ContentScale.Crop,
             alignment = Alignment.Center,
             modifier =
                 Modifier
                     .clip(MaterialTheme.shapes.medium)
                     .fillMaxWidth()
-                    .aspectRatio(16.0f / 9.0f)
-                    .alpha(0.74f),
+                    .aspectRatio(16.0f / 9.0f),
         )
     }
 }
@@ -344,3 +372,20 @@ private fun PreviewWithImageRead() {
         }
     }
 }
+
+private val ReadImageFilter =
+    ColorFilter.colorMatrix(
+        ColorMatrix().apply {
+            setToSaturation(0f)
+            // 75% brightness
+            this[0, 0] *= 0.75f
+            this[0, 1] *= 0.75f
+            this[0, 2] *= 0.75f
+            this[1, 0] *= 0.75f
+            this[1, 1] *= 0.75f
+            this[1, 2] *= 0.75f
+            this[2, 0] *= 0.75f
+            this[2, 1] *= 0.75f
+            this[2, 2] *= 0.75f
+        },
+    )

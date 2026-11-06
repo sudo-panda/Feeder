@@ -330,7 +330,18 @@ fun ArticleScreen(
     var findQuery by rememberSaveable { mutableStateOf("") }
     var findCurrent by rememberSaveable { mutableIntStateOf(0) }
     var findRequest by remember { mutableIntStateOf(0) }
-    val findMatchList = remember(viewState.articleContent, findQuery) { findMatches(viewState.articleContent, findQuery) }
+    // Highlighting re-lays out every matching paragraph, so wait for typing to pause and for 2+ letters
+    var findAppliedQuery by remember { mutableStateOf(findQuery) }
+    LaunchedEffect(findQuery) {
+        if (findQuery.length < 2) {
+            findAppliedQuery = ""
+        } else {
+            if (findAppliedQuery.isNotEmpty()) delay(250)
+            findAppliedQuery = findQuery
+            findRequest++
+        }
+    }
+    val findMatchList = remember(viewState.articleContent, findAppliedQuery) { findMatches(viewState.articleContent, findAppliedQuery) }
     val findHighlightMap = remember(findMatchList, findCurrent, findOpen) { if (findOpen) findHighlights(findMatchList, findCurrent) else emptyMap() }
     BackHandler(enabled = findOpen) { findOpen = false }
 
@@ -375,7 +386,6 @@ fun ArticleScreen(
                     onQueryChange = {
                         findQuery = it
                         findCurrent = 0
-                        findRequest++
                     },
                     current = findCurrent,
                     total = findMatchList.size,

@@ -33,8 +33,18 @@
 > - **Swipe between articles:** in the reader, swipe left for the next article and right for
 >   the previous one, in the order of the list you opened it from. While swiping, the next
 >   article's page shows beside the current one, from stored data only. Tap-to-page is gone.
-> - **Sidebar edit mode:** an *Edit* button in the sidebar shows *Add feed* and an edit and a
->   delete button on every feed, like Boost. These left the feed screen's ⋮ menu.
+> - **Sidebar header and edit mode:** the app's logo in the accent colour next to its name.
+>   Under the line below *Saved articles* are *Add* and *Edit*; *Edit* shows an edit and
+>   a delete button on every feed, like Boost. These left the feed screen's ⋮ menu.
+> - **Add feed page:** a rounded search field that searches by itself once you stop typing an
+>   address, a short how-to, and result cards with feed avatars. The sidebar stays open behind
+>   the Add and Edit pages.
+> - **Card buttons:** save, share and a ⋯ menu with mark read/unread and the open options (no
+>   repeats of the buttons). Swiping a card opens the article in the browser; other article
+>   styles still swipe to mark read.
+> - **Other article styles:** compact cards keep the image clear in the top half, compact rows
+>   have no thumbnail, and super compact rows show just the title and feed · time line.
+> - **View type** in the feed screen's ⋮ menu: card, compact card, compact or super compact.
 > - **List appearance:** title size, text size and icon size of the article list, from the feed screen's
 >   ⋮ menu.
 > - **Hiding mark-all-as-read button:** it slides away while you scroll down and comes back
