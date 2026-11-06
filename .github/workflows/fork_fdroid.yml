@@ -169,9 +169,3 @@ jobs:
       - name: deploy F-Droid repo
         id: deploy
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
-        env:
-          # deploy-pages labels each deployment with GITHUB_SHA. Betas are all published from
-          # the same master commit, and GitHub Pages stopped applying deployments that reuse
-          # a label (they reported success but kept serving the old site), so give every run
-          # its own label.
-          GITHUB_SHA: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
