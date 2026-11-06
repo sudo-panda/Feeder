@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -44,7 +46,6 @@ import com.nononsenseapps.feeder.ui.compose.minimumTouchSize
 import com.nononsenseapps.feeder.ui.compose.theme.PreviewTheme
 import com.nononsenseapps.feeder.ui.compose.utils.PreviewThemes
 import com.nononsenseapps.feeder.util.logDebug
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.net.URL
 import java.time.Instant
 
@@ -78,8 +79,15 @@ data class FeedItemState(
 
 private val iconSize = 24.dp
 
-// Fork: the image stays clear in the upper half and only darkens behind the text at the bottom
-private val gradientColors = listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.8f))
+// Fork: the top of the image stays clear; from a third of the way down it darkens, strongly behind
+// the text at the bottom, so white text is readable on any image
+private val gradientStops =
+    arrayOf(
+        0f to Color.Transparent,
+        0.3f to Color.Black.copy(alpha = 0.1f),
+        0.6f to Color.Black.copy(alpha = 0.55f),
+        1f to Color.Black.copy(alpha = 0.9f),
+    )
 
 @Composable
 fun FeedItemCompactCard(
@@ -95,7 +103,9 @@ fun FeedItemCompactCard(
             modifier =
                 Modifier
                     .requiredHeightIn(min = minimumTouchSize)
-                    .alpha(if (!state.item.unread) 0.75f else 1.0f)
+                    // Fork: with an image, read cards show it greyed out instead of fading the
+                    // white text until it can't be read
+                    .alpha(if (!state.item.unread && !state.showThumbnail) 0.75f else 1.0f)
                     .fillMaxWidth(),
         ) {
             if (state.showThumbnail) {
@@ -106,7 +116,7 @@ fun FeedItemCompactCard(
                     }
                 val gradient =
                     Brush.verticalGradient(
-                        colors = gradientColors,
+                        colorStops = gradientStops,
                         startY = 0f,
                         endY = sizePx.height.pxOrElse { 0 }.toFloat(),
                     )
@@ -115,6 +125,7 @@ fun FeedItemCompactCard(
                     FeedItemThumbnail(
                         imageUrl = imageUrl,
                         sizePx = sizePx,
+                        read = !state.item.unread,
                     )
                 }
                 Box(
@@ -135,15 +146,9 @@ fun FeedItemCompactCard(
                 if (state.item.bookmarked && state.bookmarkIndicator) {
                     FeedItemSavedIndicator(size = iconSize, modifier = Modifier)
                 }
+                // Fork: the unread circle takes the corner; the feed icon is next to its name
                 if (state.item.unread) {
                     FeedItemNewIndicator(size = iconSize, modifier = Modifier)
-                }
-                state.item.feedImageUrl?.toHttpUrlOrNull()?.also {
-                    FeedItemFeedIconIndicator(
-                        feedImageUrl = it.toString(),
-                        size = iconSize,
-                        modifier = Modifier,
-                    )
                 }
             }
 
@@ -194,6 +199,7 @@ private fun FeedItemTitle(
                 maxLines = state.maxLines,
                 showOnlyTitle = true,
                 showReadingTime = state.showReadingTime,
+                showFeedAvatar = true,
             )
         }
     }
@@ -203,6 +209,7 @@ private fun FeedItemTitle(
 private fun FeedItemThumbnail(
     imageUrl: String?,
     sizePx: Size,
+    read: Boolean = false,
 ) {
     if (imageUrl != null) {
         AsyncImage(
@@ -221,6 +228,8 @@ private fun FeedItemThumbnail(
             placeholder = rememberTintedVectorPainter(Icons.Outlined.Terrain),
             error = rememberTintedVectorPainter(Icons.Outlined.ErrorOutline),
             contentDescription = stringResource(id = R.string.article_image),
+            // Fork: read articles get a grey, slightly darker image
+            colorFilter = if (read) ReadImageFilter else null,
             contentScale = ContentScale.Crop,
             alignment = Alignment.Center,
             modifier =
@@ -345,3 +354,20 @@ private fun PreviewWithImageRead() {
         }
     }
 }
+
+private val ReadImageFilter =
+    ColorFilter.colorMatrix(
+        ColorMatrix().apply {
+            setToSaturation(0f)
+            // 75% brightness
+            this[0, 0] *= 0.75f
+            this[0, 1] *= 0.75f
+            this[0, 2] *= 0.75f
+            this[1, 0] *= 0.75f
+            this[1, 1] *= 0.75f
+            this[1, 2] *= 0.75f
+            this[2, 0] *= 0.75f
+            this[2, 1] *= 0.75f
+            this[2, 2] *= 0.75f
+        },
+    )

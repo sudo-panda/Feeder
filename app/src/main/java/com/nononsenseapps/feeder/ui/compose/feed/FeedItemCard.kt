@@ -351,6 +351,7 @@ fun RowScope.FeedItemText(
     showOnlyTitle: Boolean,
     showReadingTime: Boolean,
     modifier: Modifier = Modifier,
+    showFeedAvatar: Boolean = false,
 ) {
     val snippetStyle = FeedListItemSnippetTextStyle()
     val joinedText =
@@ -392,10 +393,20 @@ fun RowScope.FeedItemText(
         Box {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
                         .fillMaxWidth(),
             ) {
+                // Fork: the feed's round icon before its name, like on the cards
+                if (showFeedAvatar) {
+                    FeedAvatar(
+                        feedTitle = item.feedTitle,
+                        imageUrl = item.feedImageUrl?.toString(),
+                        size = textIconSize(FeedListItemFeedTitleStyle(), 16f / 12f),
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                }
                 CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.medium) {
                     WithBidiDeterminedLayoutDirection(paragraph = item.feedTitle) {
                         Text(
